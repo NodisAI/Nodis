@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <AvaloniaResource Include="Assets\**"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AsyncImageLoader.Avalonia" />
+        <PackageReference Include="Avalonia"/>
+        <PackageReference Include="Avalonia.Desktop"/>
+        <PackageReference Include="Avalonia.Themes.Fluent"/>
+        <PackageReference Include="Avalonia.Fonts.Inter"/>
+        <PackageReference Include="Avalonia.Diagnostics">
+            <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+            <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="ColorCode.Core" />
+        <PackageReference Include="CommunityToolkit.Mvvm"/>
+        <PackageReference Include="HotAvalonia.Extensions" />
+        <PackageReference Include="IconPacks.Avalonia.EvaIcons" />
+        <PackageReference Include="Markdig" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+        <PackageReference Include="Microsoft.PowerShell.Native" />
+        <PackageReference Include="VYaml" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\3rd\SukiUI\SukiUI\SukiUI.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Views\Windows\MainWindow.axaml.cs">
+        <DependentUpon>MainWindow.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+    </ItemGroup>
+</Project>

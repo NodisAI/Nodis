@@ -1,0 +1,13 @@
+﻿<Styles
+    xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:md="clr-namespace:Nodis.Views.Markdown">
+    <Style Selector="md|MarkdownViewer">
+        <Setter Property="Template">
+            <ControlTemplate TargetType="md:MarkdownViewer">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <ContentControl Content="{Binding RenderedContent, RelativeSource={RelativeSource TemplatedParent}}"/>
+                </ScrollViewer>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>

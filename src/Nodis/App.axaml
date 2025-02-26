@@ -1,0 +1,12 @@
+<Application
+    x:Class="Nodis.App" xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:suki="clr-namespace:SukiUI;assembly=SukiUI">
+
+    <Application.Styles>
+        <suki:SukiTheme ThemeColor="Blue"/>
+        <StyleInclude Source="avares://IconPacks.Avalonia.EvaIcons/EvaIcons.axaml"/>
+
+        <StyleInclude Source="Styles/Markdown.axaml"/>
+        <StyleInclude Source="Views/Markdown/MarkdownViewer.axaml"/>
+    </Application.Styles>
+</Application>
