@@ -1,0 +1,165 @@
+﻿<Styles
+    xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ip="https://github.com/MahApps/IconPacks.Avalonia" xmlns:m="clr-namespace:Nodis.Models.Workflow"
+    xmlns:suki="https://github.com/kikipoulet/SukiUI" xmlns:v="using:Nodis.Views.Workflow"
+    xmlns:vc="clr-namespace:Nodis.ValueConverters">
+    <Design.PreviewWith>
+        <v:WorkflowNodeItem/>
+    </Design.PreviewWith>
+
+    <Style Selector="v|WorkflowNodeItem">
+        <Style.Resources>
+            <vc:WorkflowNodeStatusToColorConverter x:Key="StatusToColorConverter"/>
+        </Style.Resources>
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{DynamicResource SukiGlassCardBackground}" CornerRadius="8">
+                    <Grid RowDefinitions="32,1,Auto,Auto">
+                        <DockPanel Grid.Row="0" LastChildFill="True">
+                            <Border
+                                x:Name="PART_StatusIndicator" DockPanel.Dock="Left"
+                                Width="16" Height="16"
+                                Margin="8"
+                                Background="{Binding Node.Status, Converter={StaticResource StatusToColorConverter}, RelativeSource={RelativeSource TemplatedParent}}"
+                                CornerRadius="8"/>
+
+                            <TextBlock
+                                Margin="4,0" VerticalAlignment="Center"
+                                Text="{Binding Node.Name, RelativeSource={RelativeSource TemplatedParent}}"/>
+
+                            <Button
+                                DockPanel.Dock="Right" Margin="8,4"
+                                Padding="2" HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Foreground="{DynamicResource SukiText}">
+                                <Button.Flyout>
+                                    <MenuFlyout ItemsSource="{Binding Node.ContextMenuItems, RelativeSource={RelativeSource TemplatedParent}}">
+                                        <MenuFlyout.ItemContainerTheme>
+                                            <ControlTheme
+                                                x:DataType="m:WorkflowNodeMenuFlyoutItem"
+                                                BasedOn="{StaticResource SukiMenuItemStyle}"
+                                                TargetType="MenuItem">
+                                                <Setter Property="Header" Value="{Binding Header}"/>
+                                                <!-- <Setter Property="ItemsSource" Value="{Binding Items}"/> -->
+                                                <Setter Property="Command" Value="{Binding Command}"/>
+                                                <Setter Property="CommandParameter" Value="{Binding CommandParameter}"/>
+                                                <Setter Property="Icon">
+                                                    <Setter.Value>
+                                                        <Template>
+                                                            <ip:PackIconEvaIcons
+                                                                Width="12" Height="12"
+                                                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                Kind="{Binding Icon}"/>
+                                                        </Template>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Setter Property="Foreground" Value="{Binding Foreground}"/>
+                                            </ControlTheme>
+                                        </MenuFlyout.ItemContainerTheme>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="Transparent">
+                                            <ip:PackIconEvaIcons
+                                                Width="16" Height="16"
+                                                Foreground="{DynamicResource SukiLowText}"
+                                                Kind="Menu"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </DockPanel>
+
+                        <Border Grid.Row="1" Background="{DynamicResource SukiControlBorderBrush}"/>
+
+                        <UniformGrid
+                            Grid.Row="2" Columns="2"
+                            Rows="1">
+                            <ItemsControl ItemsSource="{Binding Node.Inputs, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="m:WorkflowNodeInputPort">
+                                        <Panel Height="20">
+                                            <Border
+                                                Width="10" Height="10"
+                                                Margin="11,0,0,0" HorizontalAlignment="Left"
+                                                VerticalAlignment="Center" CornerRadius="5">
+                                                <Border.Background>
+                                                    <SolidColorBrush Color="{Binding Color}"/>
+                                                </Border.Background>
+                                            </Border>
+                                            <TextBlock
+                                                Margin="25,0,0,0" VerticalAlignment="Center"
+                                                Text="{Binding Name}"/>
+                                        </Panel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <ItemsControl ItemsSource="{Binding Node.Outputs, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="m:WorkflowNodeOutputPort">
+                                        <Panel
+                                            x:Name="PART_OutputPort" Height="20"
+                                            Background="Transparent">
+                                            <TextBlock
+                                                Margin="0,0,25,0" HorizontalAlignment="Right"
+                                                VerticalAlignment="Center" IsHitTestVisible="False"
+                                                Text="{Binding Name}"/>
+                                            <Border
+                                                Width="10" Height="10"
+                                                Margin="0,0,11,0" HorizontalAlignment="Right"
+                                                VerticalAlignment="Center" CornerRadius="5"
+                                                IsHitTestVisible="False">
+                                                <Border.Background>
+                                                    <SolidColorBrush Color="{Binding Color}"/>
+                                                </Border.Background>
+                                            </Border>
+                                        </Panel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </UniformGrid>
+
+                        <ItemsControl
+                            Grid.Row="3" Margin="8"
+                            ItemsSource="{Binding Node.Properties, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="m:WorkflowNodeProperty">
+                                    <Panel Margin="0,0,0,8">
+                                        <TextBlock Classes="h5" Text="{Binding Name}"/>
+                                        <ContentPresenter Margin="0,12,0,0" Content="{Binding}"/>
+                                    </Panel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+
+                            <ItemsControl.DataTemplates>
+                                <DataTemplate DataType="m:WorkflowNodeStringProperty">
+                                    <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+
+                                <DataTemplate DataType="m:WorkflowNodeIntegerProperty">
+                                    <NumericUpDown Increment="1" Value="{Binding Value, Mode=TwoWay}"/>
+                                </DataTemplate>
+
+                                <DataTemplate DataType="m:WorkflowNodeDecimalProperty">
+                                    <Slider Value="{Binding Value, Mode=TwoWay}"/>
+                                </DataTemplate>
+
+                                <DataTemplate DataType="m:WorkflowNodeBooleanProperty">
+                                    <CheckBox IsChecked="{Binding Value, Mode=TwoWay}"/>
+                                </DataTemplate>
+
+                                <DataTemplate DataType="m:WorkflowNodeSelectionProperty">
+                                    <ComboBox ItemsSource="{Binding Value}" SelectedItem="{Binding SelectedItem}"/>
+                                </DataTemplate>
+                            </ItemsControl.DataTemplates>
+                        </ItemsControl>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>

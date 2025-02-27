@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Nodis.Interfaces;
 using Nodis.Models;
 
@@ -11,6 +12,11 @@ public class MinGWBashExecutor : IBashExecutor
 
     public IBashExecution Execute(BashExecutionOptions options, CancellationToken cancellationToken = default)
     {
+        options.EnvironmentVariables["OSTYPE"] = "msys";
+        options.EnvironmentVariables["WORKING_DIR"] = GetUnixPath(options.WorkingDirectory) ?? "~";
+        options.EnvironmentVariables["CACHE_DIR"] = GetUnixPath(
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), nameof(Nodis), ".cache"));
+
         var startInfo = new ProcessStartInfo
         {
             FileName = BashExecutablePath,
@@ -28,10 +34,21 @@ public class MinGWBashExecutor : IBashExecutor
         return new BashExecution(process, options);
     }
 
+    [return: NotNullIfNotNull(nameof(path))]
+    private static string? GetUnixPath(string? path)
+    {
+        if (path == null) return path;
+        path = Path.GetFullPath(Environment.ExpandEnvironmentVariables(path));
+        if (path.Length < 2) return path;
+        var drive = path[0];
+        path = path.Replace('\\', '/');
+        return $"/{drive.ToString().ToLower()}{path[2..]}";
+    }
+
     private class BashExecution(Process process, BashExecutionOptions options) : IBashExecution
     {
-        public Stream StandardOutput => process.StandardOutput.BaseStream;
-        public Stream StandardError => process.StandardError.BaseStream;
+        public StreamReader StandardOutput => process.StandardOutput;
+        public StreamReader StandardError => process.StandardError;
 
         public async Task<int> WaitAsync()
         {
@@ -40,9 +57,17 @@ public class MinGWBashExecutor : IBashExecutor
             {
                 await input.WriteLineAsync($"export {key}={value}");
             }
-            foreach (var commandLine in options.CommandLines)
+
+            if (options.ScriptPath is { } scriptPath)
             {
-                await input.WriteLineAsync(commandLine);
+                await input.WriteLineAsync($"source {GetUnixPath(scriptPath)} {string.Join(' ', options.CommandLines)}");
+            }
+            else
+            {
+                foreach (var commandLine in options.CommandLines)
+                {
+                    await input.WriteLineAsync(commandLine);
+                }
             }
 
             await input.WriteLineAsync("exit");

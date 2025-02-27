@@ -2,6 +2,7 @@
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <ApplicationManifest>app.manifest</ApplicationManifest>
+        <DefineConstants>$(DefineConstants);ENABLE_XAML_HOT_RELOAD</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>
@@ -9,7 +10,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="AsyncImageLoader.Avalonia" />
+        <PackageReference Include="AsyncImageLoader.Avalonia"/>
         <PackageReference Include="Avalonia"/>
         <PackageReference Include="Avalonia.Desktop"/>
         <PackageReference Include="Avalonia.Themes.Fluent"/>
@@ -18,24 +19,27 @@
             <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="ColorCode.Core" />
+        <PackageReference Include="ColorCode.Core"/>
         <PackageReference Include="CommunityToolkit.Mvvm"/>
-        <PackageReference Include="HotAvalonia.Extensions" />
-        <PackageReference Include="IconPacks.Avalonia.EvaIcons" />
-        <PackageReference Include="Markdig" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
-        <PackageReference Include="Microsoft.PowerShell.Native" />
-        <PackageReference Include="VYaml" />
+        <PackageReference Condition="$(DefineConstants.Contains(ENABLE_XAML_HOT_RELOAD))" Include="Avalonia.Markup.Xaml.Loader"/>
+        <PackageReference Condition="$(DefineConstants.Contains(ENABLE_XAML_HOT_RELOAD))" Include="HotAvalonia"/>
+        <PackageReference Include="HotAvalonia.Extensions" PrivateAssets="All"/>
+        <PackageReference Include="IconPacks.Avalonia.EvaIcons"/>
+        <PackageReference Include="Markdig"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection"/>
+        <PackageReference Include="Microsoft.PowerShell.Native"/>
+        <PackageReference Include="System.Reactive" />
+        <PackageReference Include="VYaml"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\3rd\SukiUI\SukiUI\SukiUI.csproj" />
+        <ProjectReference Include="..\..\3rd\SukiUI\SukiUI\SukiUI.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Update="Views\Windows\MainWindow.axaml.cs">
-        <DependentUpon>MainWindow.axaml</DependentUpon>
-        <SubType>Code</SubType>
-      </Compile>
+        <Compile Update="Views\Windows\MainWindow.axaml.cs">
+            <DependentUpon>MainWindow.axaml</DependentUpon>
+            <SubType>Code</SubType>
+        </Compile>
     </ItemGroup>
 </Project>

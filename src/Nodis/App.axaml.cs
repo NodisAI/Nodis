@@ -1,6 +1,7 @@
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using HotAvalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Nodis.Extensions;
 using Nodis.Interfaces;
@@ -40,6 +41,8 @@ public class App : Application, IKeyedServiceProvider
         #region MainWindowPages
 
         ServiceCollection
+            .AddSingleton<WorkflowEditPageViewModel>()
+            .AddSingleton<IMainWindowPage, WorkflowEditPage>()
             .AddSingleton<NodeStorePageViewModel>()
             .AddSingleton<IMainWindowPage, NodeStorePage>();
 
@@ -51,6 +54,7 @@ public class App : Application, IKeyedServiceProvider
 
         serviceProvider = ServiceCollection.BuildServiceProvider();
 
+        this.EnableHotReload();
         AvaloniaXamlLoader.Load(this);
     }
 

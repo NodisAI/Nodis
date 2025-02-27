@@ -1,0 +1,10 @@
+﻿<v:ReactiveUserControl
+    x:Class="Nodis.Views.WorkflowEditPage" xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:v="clr-namespace:Nodis.Views"
+    xmlns:vm="clr-namespace:Nodis.ViewModels" xmlns:wf="clr-namespace:Nodis.Views.Workflow"
+    d:DesignHeight="450" d:DesignWidth="800"
+    x:TypeArguments="vm:WorkflowEditPageViewModel" mc:Ignorable="d">
+    <wf:WorkflowEditor>
+    </wf:WorkflowEditor>
+</v:ReactiveUserControl>

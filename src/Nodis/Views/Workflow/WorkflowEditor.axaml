@@ -1,0 +1,44 @@
+﻿<UserControl
+    x:Class="Nodis.Views.Workflow.WorkflowEditor" xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" d:DesignHeight="450"
+    d:DesignWidth="800" mc:Ignorable="d">
+    <UserControl.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="Add node" IsEnabled="False"/>
+            <MenuItem Header="Basic">
+                <MenuItem Click="HandleMenuItemOnClick" Header="Constant"/>
+                <MenuItem Click="HandleMenuItemOnClick" Header="Condition"/>
+            </MenuItem>
+        </ContextMenu>
+    </UserControl.ContextMenu>
+
+    <Panel Background="{DynamicResource SukiBorderBrush}">
+        <Panel x:Name="SquareMeshBackground">
+            <Border>
+                <Border.Background>
+                    <DrawingBrush
+                        DestinationRect="0,0,7.5,7.5" SourceRect="0,0,1,1"
+                        TileMode="Tile">
+                        <DrawingBrush.Drawing>
+                            <GeometryDrawing Brush="{DynamicResource GlassBorderBrush}" Geometry="M0 0 1 0 1 .1.1.1.1 1 0 1Z"/>
+                        </DrawingBrush.Drawing>
+                    </DrawingBrush>
+                </Border.Background>
+            </Border>
+            <Border>
+                <Border.Background>
+                    <DrawingBrush
+                        DestinationRect="0,0,90,90" SourceRect="0,0,1,1"
+                        TileMode="Tile">
+                        <DrawingBrush.Drawing>
+                            <GeometryDrawing Brush="{DynamicResource GlassBorderBrush}" Geometry="M0 0 1 0 1 1 0 1ZM.99.99.99.02.02.02.02.99Z"/>
+                        </DrawingBrush.Drawing>
+                    </DrawingBrush>
+                </Border.Background>
+            </Border>
+        </Panel>
+
+        <Canvas x:Name="NodeCanvas"/>
+    </Panel>
+</UserControl>

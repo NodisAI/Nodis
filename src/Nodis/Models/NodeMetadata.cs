@@ -52,11 +52,19 @@ public partial class NodeInstallOperation
     public required string Args { get; set; }
 }
 
+public enum NodeSourceType
+{
+    [EnumMember(Value = "git")]
+    Git,
+    [EnumMember(Value = "Executable")]
+    Executable,
+}
+
 [YamlObject]
 public partial class NodeSource
 {
     [YamlMember("type")]
-    public required string Type { get; set; }
+    public required NodeSourceType Type { get; set; }
 
     [YamlMember("url")]
     public required string Url { get; set; }

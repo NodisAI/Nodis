@@ -2,7 +2,9 @@
 
 public record BashExecutionOptions
 {
-    public required IReadOnlyList<string> CommandLines { get; init; }
+    public string? ScriptPath { get; init; }
+
+    public IReadOnlyList<string> CommandLines { get; init; } = [];
 
     public string? WorkingDirectory { get; init; }
 

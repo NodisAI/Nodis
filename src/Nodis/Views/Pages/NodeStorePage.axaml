@@ -1,23 +1,107 @@
 ﻿<v:ReactiveUserControl
     x:Class="Nodis.Views.NodeStorePage" xmlns="https://github.com/avaloniaui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:md="clr-namespace:Nodis.Views.Markdown"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:ail="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:md="clr-namespace:Nodis.Views.Markdown" xmlns:suki="https://github.com/kikipoulet/SukiUI"
     xmlns:v="clr-namespace:Nodis.Views" xmlns:vm="clr-namespace:Nodis.ViewModels"
     d:DesignHeight="450" d:DesignWidth="800"
     x:DataType="vm:NodeStorePageViewModel" x:TypeArguments="vm:NodeStorePageViewModel"
     mc:Ignorable="d">
-    <Grid ColumnDefinitions="1*,3*">
-        <ListBox
-            Grid.Column="0"
-            ItemsSource="{Binding Nodes}"
-            SelectedItem="{Binding SelectedNode}">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding Node.Description}"/>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+    <Grid ColumnDefinitions="1*,3*" RowDefinitions="Auto,*">
+        <TextBox
+            Grid.Row="0" Grid.Column="0"
+            Grid.ColumnSpan="2" suki:TextBoxExtensions.AddDeleteButton="True"
+            Watermark="Search Nodes"/>
 
-        <md:MarkdownViewer Grid.Column="1" Markdown="{Binding SelectedNode.ReadmeMarkdown.Value, FallbackValue={x:Null}}"/>
+        <suki:GlassCard
+            Grid.Row="1" Grid.Column="0"
+            Margin="5,0,0,5" Padding="0"
+            CornerRadius="8">
+            <ListBox
+                Classes="Compact"
+                ItemsSource="{Binding Nodes}"
+                SelectedItem="{Binding SelectedNode}">
+                <ListBox.Styles>
+                    <Style Selector="TextBlock">
+                        <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
+                    </Style>
+
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Padding" Value="4,2"/>
+                        <Setter Property="Template">
+                            <ControlTemplate>
+                                <Border
+                                    Name="BorderBasicStyle" Margin="0"
+                                    Padding="8,4" CornerRadius="8">
+                                    <ContentPresenter
+                                        Name="PART_ContentPresenter" Margin="0,0,0,0"
+                                        Padding="{TemplateBinding Padding}"
+                                        HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                        Background="Transparent" BorderBrush="Transparent"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        Content="{TemplateBinding Content}"
+                                        ContentTemplate="{TemplateBinding ContentTemplate}"
+                                        CornerRadius="{TemplateBinding CornerRadius}"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter>
+                    </Style>
+                </ListBox.Styles>
+
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="32,*" RowDefinitions="32,*">
+                            <Image
+                                Grid.Row="0" Grid.Column="0"
+                                ail:ImageLoader.Source="{Binding Metadata.Icon, Mode=OneWay}"/>
+
+                            <TextBlock
+                                Grid.Row="0" Grid.Column="1"
+                                Margin="4,0,0,0" VerticalAlignment="Center"
+                                Classes="h4"
+                                Text="{Binding Title}"/>
+                            <TextBlock
+                                Grid.Row="1" Grid.Column="0"
+                                Grid.ColumnSpan="2" Margin="0,4,0,0"
+                                Classes="h5" MaxLines="3"
+                                Text="{Binding Metadata.Description}"
+                                TextTrimming="{x:Static TextTrimming.CharacterEllipsis}"
+                                TextWrapping="Wrap"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </suki:GlassCard>
+
+        <suki:GlassCard
+            Grid.Row="1" Grid.Column="1"
+            Margin="5,0,5,5" Padding="0"
+            CornerRadius="8">
+            <Grid RowDefinitions="*,1,Auto">
+                <ScrollViewer
+                    Grid.Row="0" HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+                    <md:MarkdownViewer Margin="5,0" Markdown="{Binding SelectedNode.ReadmeMarkdown.Value, FallbackValue={x:Null}}"/>
+                </ScrollViewer>
+
+                <Border Grid.Row="1" Background="{DynamicResource SukiControlBorderBrush}"/>
+
+                <StackPanel
+                    Grid.Row="2" HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+                    <ComboBox
+                        Margin="0,5"
+                        ItemsSource="{Binding SelectedNode.Versions, FallbackValue={x:Null}}"
+                        SelectedItem="{Binding SelectedNode.SelectedVersion, FallbackValue={x:Null}}"/>
+
+                    <Button
+                        Margin="5" Padding="8,2"
+                        Classes="Flat"
+                        Command="{Binding DownloadNodeCommand}"
+                        Content="Install"/>
+                </StackPanel>
+            </Grid>
+        </suki:GlassCard>
     </Grid>
 </v:ReactiveUserControl>

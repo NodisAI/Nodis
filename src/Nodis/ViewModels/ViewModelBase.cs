@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Nodis.Extensions;
 using Nodis.Interfaces;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
@@ -32,11 +33,12 @@ public abstract class ReactiveViewModelBase : ObservableValidator
     {
         if (LifetimeExceptionHandler is not { } lifetimeExceptionHandler)
         {
-            var toast = ToastManager.CreateToast();
-            toast.SetType(NotificationType.Error);
-            toast.SetTitle("Lifetime Exception");
-            toast.SetContent($"[{stage}] {e}");
-            toast.Queue();
+            ToastManager.CreateToast()
+                .SetType(NotificationType.Error)
+                .SetTitle($"Lifetime Exception: [{stage}]")
+                .SetContent(e.GetFriendlyMessage())
+                .SetCanDismissByClicking()
+                .Queue();
         }
         else
         {

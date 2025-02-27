@@ -1,11 +1,12 @@
-<views:ReactiveSukiWindow
+<v:ReactiveSukiWindow
     x:Class="Nodis.Views.MainWindow" xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:suki="https://github.com/kikipoulet/SukiUI"
-    xmlns:views="clr-namespace:Nodis.Views" xmlns:vm="using:Nodis.ViewModels"
+    xmlns:v="clr-namespace:Nodis.Views" xmlns:vm="using:Nodis.ViewModels"
     d:DesignHeight="450" d:DesignWidth="800"
     Title="Nodis" x:DataType="vm:MainWindowViewModel"
     x:TypeArguments="vm:MainWindowViewModel" Icon="/Assets/avalonia-logo.ico"
+    TitleFontSize="18" TitleFontWeight="Bold"
     mc:Ignorable="d">
 
     <Design.DataContext>
@@ -17,20 +18,9 @@
         <suki:SukiToastHost Manager="{Binding ToastManager}"/>
     </suki:SukiWindow.Hosts>
 
-    <suki:SukiSideMenu IsSearchEnabled="False" ItemsSource="{Binding Pages}">
-        <suki:SukiSideMenu.ItemTemplate>
-            <DataTemplate>
-                <suki:SukiSideMenuItem Classes="Compact"/>
-            </DataTemplate>
-        </suki:SukiSideMenu.ItemTemplate>
-
-        <suki:SukiSideMenu.HeaderContent>
-            <Button/>
-        </suki:SukiSideMenu.HeaderContent>
-
-        <suki:SukiSideMenu.FooterContent>
-            <Button/>
-        </suki:SukiSideMenu.FooterContent>
-    </suki:SukiSideMenu>
-
-</views:ReactiveSukiWindow>
+    <suki:SukiSideMenu
+        Background="{DynamicResource SukiGlassCardOpaqueBackground}"
+        IsMenuExpanded="False"
+        ItemsSource="{Binding Pages}"
+        SplitViewDisplayMode="CompactOverlay"/>
+</v:ReactiveSukiWindow>

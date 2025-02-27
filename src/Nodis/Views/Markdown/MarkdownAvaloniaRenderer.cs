@@ -235,12 +235,15 @@ public class MarkdownAvaloniaRenderer
             lastRenderedItemBlock = renderedItemBlock;
             renderedItemBlock.Margin = new Thickness(renderedItemBlock.Margin.Left, renderedItemBlock.Margin.Top, renderedItemBlock.Margin.Right, renderedItemBlock.Margin.Bottom / 4);
 
-            TextBlock marker = new TextBlock();
+            var marker = new TextBlock
+            {
+                TextWrapping = TextWrapping.Wrap,
+                Text = markerTextGetter.Invoke(index),
+                Margin = new Thickness(0, 0, 6, 0),
+                TextAlignment = TextAlignment.Right,
+            };
             Grid.SetRow(marker, index);
             Grid.SetColumn(marker, 0);
-            marker.Text = markerTextGetter.Invoke(index);
-            marker.Margin = new Thickness(0, 0, 6, 0);
-            marker.TextAlignment = TextAlignment.Right;
 
             Grid.SetRow(renderedItemBlock, index);
             Grid.SetColumn(renderedItemBlock, 1);
@@ -366,6 +369,7 @@ public class MarkdownAvaloniaRenderer
         
         var headingElement = new TextBlock
         {
+            TextWrapping = TextWrapping.Wrap,
             FontWeight = FontWeight.DemiBold,
             Classes = { "Markdown", "Heading" + headingBlock.Level },
             Margin = new Thickness(0, 0, 0, 12)
@@ -383,7 +387,7 @@ public class MarkdownAvaloniaRenderer
         if (cancellationToken.IsCancellationRequested)
             return new Control();
 
-        var paragraphElement = new TextBlock()
+        var paragraphElement = new TextBlock
         {
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 12)

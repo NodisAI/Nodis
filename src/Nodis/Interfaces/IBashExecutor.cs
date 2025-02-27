@@ -9,9 +9,9 @@ public interface IBashExecutor
 
 public interface IBashExecution
 {
-    Stream StandardOutput { get; }
+    StreamReader StandardOutput { get; }
 
-    Stream StandardError { get; }
+    StreamReader StandardError { get; }
 
     Task<int> WaitAsync();
 }

@@ -4,9 +4,7 @@
     <Style Selector="md|MarkdownViewer">
         <Setter Property="Template">
             <ControlTemplate TargetType="md:MarkdownViewer">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <ContentControl Content="{Binding RenderedContent, RelativeSource={RelativeSource TemplatedParent}}"/>
-                </ScrollViewer>
+                <ContentControl Content="{Binding RenderedContent, RelativeSource={RelativeSource TemplatedParent}}"/>
             </ControlTemplate>
         </Setter>
     </Style>

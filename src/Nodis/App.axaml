@@ -8,5 +8,6 @@
 
         <StyleInclude Source="Styles/Markdown.axaml"/>
         <StyleInclude Source="Views/Markdown/MarkdownViewer.axaml"/>
+        <StyleInclude Source="Views/Workflow/WorkflowNodeItem.axaml"/>
     </Application.Styles>
 </Application>

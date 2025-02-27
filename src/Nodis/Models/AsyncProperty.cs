@@ -2,7 +2,7 @@
 
 namespace Nodis.Models;
 
-public sealed partial class AsyncProperty<T> : ObservableObject
+public sealed partial class AsyncProperty<T>(Func<Task<T>> asyncGetter) : ObservableObject
 {
     public T? Value
     {
@@ -26,22 +26,15 @@ public sealed partial class AsyncProperty<T> : ObservableObject
         }
     }
 
+    [ObservableProperty]
+    public partial Exception? Exception { get; private set; }
+
     public bool IsBusy
     {
         get => Interlocked.Read(ref busyFlag) != 0;
         private set => Interlocked.Exchange(ref busyFlag, value ? 1 : 0);
     }
 
-    private bool hasValue;
-
-    [ObservableProperty]
-    public partial Exception? Exception { get; private set; }
-
-    private readonly Func<Task<T>>? asyncGetter;
     private long busyFlag;
-
-    public AsyncProperty(Func<Task<T>> asyncGetter)
-    {
-        this.asyncGetter = asyncGetter;
-    }
+    private bool hasValue;
 }
