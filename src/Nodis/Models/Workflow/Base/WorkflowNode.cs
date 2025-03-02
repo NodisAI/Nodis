@@ -1,18 +1,21 @@
-﻿using System.Windows.Input;
+﻿using System.ComponentModel;
+using System.Windows.Input;
 using Avalonia.Controls.Notifications;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using IconPacks.Avalonia.EvaIcons;
 using Nodis.Extensions;
+using VYaml.Annotations;
 
 namespace Nodis.Models.Workflow;
 
-public enum WorkflowNodeStatus
+[Flags]
+public enum WorkflowNodeStates
 {
-    NotStarted,
-    Running,
-    Completed,
-    Failed
+    NotStarted = 0x0,
+    Running = 0x1,
+    Completed = 0x2,
+    Failed = 0x4
 }
 
 public record WorkflowNodeMenuFlyoutItem(
@@ -34,26 +37,65 @@ public record WorkflowNodeMenuFlyoutItem(
     };
 }
 
+[YamlObject]
+[YamlObjectUnion("!condition", typeof(WorkflowConditionNode))]
+[YamlObjectUnion("!constant", typeof(WorkflowConstantNode))]
+[YamlObjectUnion("!delay", typeof(WorkflowDelayNode))]
+[YamlObjectUnion("!loop", typeof(WorkflowLoopNode))]
+[YamlObjectUnion("!start", typeof(WorkflowStartNode))]
 public abstract partial class WorkflowNode : ObservableObject
 {
-    public long Id { get; }
+    private static int globalId;
+    internal int propertyId;
 
-    private static long globalId;
+    [YamlMember("id")]
+    public int Id { get; protected init; }
 
+    [YamlIgnore]
     public abstract string Name { get; }
 
     [ObservableProperty]
+    [YamlMember("x")]
     public partial double X { get; set; }
 
     [ObservableProperty]
+    [YamlMember("y")]
     public partial double Y { get; set; }
 
+    [YamlIgnore]
+    public WorkflowNodeControlInputPort? ControlInput
+    {
+        get;
+        protected set
+        {
+            if (Equals(value, field)) return;
+            if (field != null)
+            {
+                field.Owner = null;
+                field.PropertyChanged -= HandleControlInputPropertyChanged;
+            }
+            field = value;
+            if (field != null)
+            {
+                field.Owner = this;
+                field.PropertyChanged += HandleControlInputPropertyChanged;
+            }
+        }
+    }
+
+    [YamlIgnore]
+    public WorkflowNodePropertyList<WorkflowNodeControlOutputPort> ControlOutputs { get; }
+
+    [YamlIgnore]
+    public WorkflowNodePropertyList<WorkflowNodeDataInputPort> DataInputs { get; }
+
+    [YamlIgnore]
+    public WorkflowNodePropertyList<WorkflowNodeDataOutputPort> DataOutputs { get; }
+
+    [YamlIgnore]
     public WorkflowNodePropertyList<WorkflowNodeProperty> Properties { get; }
 
-    public WorkflowNodePropertyList<WorkflowNodeInputPort> Inputs { get; }
-
-    public WorkflowNodePropertyList<WorkflowNodeOutputPort> Outputs { get; }
-
+    [YamlIgnore]
     public virtual IEnumerable<WorkflowNodeMenuFlyoutItem> ContextMenuItems
     {
         get
@@ -63,24 +105,58 @@ public abstract partial class WorkflowNode : ObservableObject
     }
 
     [ObservableProperty]
-    public partial WorkflowNodeStatus Status { get; protected set; } = WorkflowNodeStatus.NotStarted;
+    [YamlIgnore]
+    public partial WorkflowNodeStates State { get; protected set; } = WorkflowNodeStates.NotStarted;
 
     [ObservableProperty]
+    [YamlIgnore]
     public partial string? ErrorMessage { get; protected set; }
 
-    protected WorkflowNode()
+    [YamlConstructor]
+    private WorkflowNode(int id)
     {
-        Id = Interlocked.Increment(ref globalId);
+        Id = id;
+        ControlOutputs = new WorkflowNodePropertyList<WorkflowNodeControlOutputPort>(this);
+        DataInputs = new WorkflowNodePropertyList<WorkflowNodeDataInputPort>(this);
+        DataOutputs = new WorkflowNodePropertyList<WorkflowNodeDataOutputPort>(this);
         Properties = new WorkflowNodePropertyList<WorkflowNodeProperty>(this);
-        Inputs = new WorkflowNodePropertyList<WorkflowNodeInputPort>(this);
-        Outputs = new WorkflowNodePropertyList<WorkflowNodeOutputPort>(this);
     }
+
+    protected WorkflowNode() : this(Interlocked.Increment(ref globalId)) { }
+
+    public override int GetHashCode() => Id;
+    public override bool Equals(object? obj) => obj is WorkflowNode other && Id == other.Id;
+
+    public WorkflowNodePort? GetInputPort(int id) =>
+        ControlInput?.Id == id ? ControlInput : DataInputs.FirstOrDefault(p => p.Id == id);
+
+    public WorkflowNodePort? GetOutputPort(int id) =>
+        ControlOutputs.FirstOrDefault<WorkflowNodePort>(p => p.Id == id) ?? DataOutputs.FirstOrDefault(p => p.Id == id);
+
+    #region Execution
 
     private CancellationTokenSource? cancellationTokenSource;
     private readonly object executeLock = new();
 
-    public async Task ExecuteAsync()
+    public void CancelExecution()
     {
+        lock (executeLock)
+        {
+            if (cancellationTokenSource is not null)
+            {
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Dispose();
+                cancellationTokenSource = null;
+            }
+
+            State = WorkflowNodeStates.NotStarted;
+        }
+    }
+
+    private async void HandleControlInputPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        var shouldExecute = sender.To<WorkflowNodeControlInputPort>()!.ShouldExecute;
+
         CancellationToken cancellationToken;
         lock (executeLock)
         {
@@ -88,9 +164,12 @@ public abstract partial class WorkflowNode : ObservableObject
             {
                 cancellationTokenSource.Cancel();
                 cancellationTokenSource.Dispose();
+                cancellationTokenSource = null;
             }
 
-            Status = WorkflowNodeStatus.Running;
+            if (!shouldExecute) return;
+
+            State = WorkflowNodeStates.Running;
             cancellationTokenSource = new CancellationTokenSource();
             cancellationToken = cancellationTokenSource.Token;
         }
@@ -98,14 +177,16 @@ public abstract partial class WorkflowNode : ObservableObject
         try
         {
             await ExecuteImplAsync(cancellationToken);
-            Status = WorkflowNodeStatus.Completed;
+            State = WorkflowNodeStates.Completed;
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            ErrorMessage = e.GetFriendlyMessage();
-            Status = WorkflowNodeStatus.Failed;
+            ErrorMessage = ex.GetFriendlyMessage();
+            State = WorkflowNodeStates.Failed;
         }
     }
 
     protected abstract Task ExecuteImplAsync(CancellationToken cancellationToken);
+
+    #endregion
 }

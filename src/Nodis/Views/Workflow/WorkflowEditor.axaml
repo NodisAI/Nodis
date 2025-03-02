@@ -1,21 +1,25 @@
 ﻿<UserControl
     x:Class="Nodis.Views.Workflow.WorkflowEditor" xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" d:DesignHeight="450"
-    d:DesignWidth="800" mc:Ignorable="d">
+    xmlns:ip="https://github.com/MahApps/IconPacks.Avalonia"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:suki="https://github.com/kikipoulet/SukiUI"
+    xmlns:vwf="clr-namespace:Nodis.Views.Workflow" d:DesignHeight="450"
+    d:DesignWidth="800" ClipToBounds="True"
+    mc:Ignorable="d">
     <UserControl.ContextMenu>
         <ContextMenu>
             <MenuItem Header="Add node" IsEnabled="False"/>
             <MenuItem Header="Basic">
                 <MenuItem Click="HandleMenuItemOnClick" Header="Constant"/>
                 <MenuItem Click="HandleMenuItemOnClick" Header="Condition"/>
+                <MenuItem Click="HandleMenuItemOnClick" Header="Delay"/>
             </MenuItem>
         </ContextMenu>
     </UserControl.ContextMenu>
 
     <Panel Background="{DynamicResource SukiBorderBrush}">
-        <Panel x:Name="SquareMeshBackground">
-            <Border>
+        <Panel>
+            <Border x:Name="CompactGridBorder">
                 <Border.Background>
                     <DrawingBrush
                         DestinationRect="0,0,7.5,7.5" SourceRect="0,0,1,1"
@@ -26,7 +30,7 @@
                     </DrawingBrush>
                 </Border.Background>
             </Border>
-            <Border>
+            <Border x:Name="GridBorder">
                 <Border.Background>
                     <DrawingBrush
                         DestinationRect="0,0,90,90" SourceRect="0,0,1,1"
@@ -39,6 +43,114 @@
             </Border>
         </Panel>
 
-        <Canvas x:Name="NodeCanvas"/>
+        <Panel x:Name="TransformRoot">
+            <ItemsControl x:Name="ConnectionItemsControl" IsHitTestVisible="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Panel/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vwf:WorkflowEditor+WorkflowNodePortConnectionItem">
+                        <Path StrokeJoin="Round" StrokeThickness="{Binding OutputPort.StrokeThickness}">
+                            <Path.Stroke>
+                                <LinearGradientBrush>
+                                    <GradientStop Offset="0" Color="{Binding OutputPort.Color}"/>
+                                    <GradientStop Offset="1" Color="{Binding InputPort.Color}"/>
+                                </LinearGradientBrush>
+                            </Path.Stroke>
+                            <Path.Data>
+                                <PathGeometry>
+                                    <PathFigure IsClosed="False" StartPoint="{Binding StartPoint}">
+                                        <BezierSegment
+                                            Point1="{Binding Point1}"
+                                            Point2="{Binding Point2}"
+                                            Point3="{Binding EndPoint}"/>
+                                    </PathFigure>
+                                </PathGeometry>
+                            </Path.Data>
+                        </Path>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Path
+                x:Name="PreviewConnectionPath" IsHitTestVisible="False"
+                StrokeJoin="Round">
+                <Path.Stroke>
+                    <LinearGradientBrush>
+                        <GradientStop Offset="0"/>
+                        <GradientStop Offset="1"/>
+                    </LinearGradientBrush>
+                </Path.Stroke>
+                <Path.Data>
+                    <PathGeometry>
+                        <PathFigure IsClosed="False">
+                            <BezierSegment/>
+                        </PathFigure>
+                    </PathGeometry>
+                </Path.Data>
+            </Path>
+            <Canvas x:Name="NodeCanvas"/>
+        </Panel>
+
+        <suki:GlassCard
+            Margin="8" HorizontalAlignment="Left"
+            VerticalAlignment="Bottom">
+            <Panel>
+                <Button
+                    Background="{DynamicResource NotificationCardSuccessBackgroundBrush}"
+                    Classes="Flat"
+                    Command="{Binding $parent[vwf:WorkflowEditor].WorkflowContext.StartCommand, FallbackValue=false}"
+                    IsVisible="{Binding $parent[vwf:WorkflowEditor].WorkflowContext.CanStart, FallbackValue=false}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ip:PackIconEvaIcons
+                            Width="20" Height="20"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Kind="ArrowRight"/>
+                        <TextBlock VerticalAlignment="Center" Text="Run Workflow"/>
+                    </StackPanel>
+                </Button>
+                <Button
+                    Background="{DynamicResource NotificationCardErrorBackgroundBrush}"
+                    Classes="Flat"
+                    Command="{Binding $parent[vwf:WorkflowEditor].WorkflowContext.StopCommand, FallbackValue=false}"
+                    IsVisible="{Binding $parent[vwf:WorkflowEditor].WorkflowContext.CanStop, FallbackValue=false}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <suki:Loading Width="20" Height="20"/>
+                        <ip:PackIconEvaIcons
+                            Width="20" Height="20"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Kind="Square"/>
+                        <TextBlock VerticalAlignment="Center" Text="Stop Workflow"/>
+                    </StackPanel>
+                </Button>
+            </Panel>
+        </suki:GlassCard>
+
+        <suki:GlassCard
+            Margin="8" HorizontalAlignment="Left"
+            VerticalAlignment="Top">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="Flat" Click="HandleSaveButtonOnClick">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ip:PackIconEvaIcons
+                            Width="20" Height="20"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Kind="Save"/>
+                        <TextBlock VerticalAlignment="Center" Text="Save"/>
+                    </StackPanel>
+                </Button>
+                <Button Classes="Flat" Click="HandleLoadButtonOnClick">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ip:PackIconEvaIcons
+                            Width="20" Height="20"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Kind="Download"/>
+                        <TextBlock VerticalAlignment="Center" Text="Load"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </suki:GlassCard>
     </Panel>
 </UserControl>

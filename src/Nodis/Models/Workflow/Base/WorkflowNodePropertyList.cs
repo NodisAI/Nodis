@@ -1,44 +1,72 @@
-﻿using System.Collections.ObjectModel;
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
+using ObservableCollections;
 
 namespace Nodis.Models.Workflow;
 
-public class WorkflowNodePropertyList<T>(WorkflowNode owner) : ObservableCollection<T> where T : WorkflowNodeProperty
+public class WorkflowNodePropertyList<T> : ObservableList<T> where T : WorkflowNodeMember
 {
-    protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
+    [field: AllowNull, MaybeNull]
+    public NotifyCollectionChangedSynchronizedViewList<T> Bindable =>
+        field ??= this.ToNotifyCollectionChanged(SynchronizationContextCollectionEventDispatcher.Current);
+
+    private readonly WorkflowNode owner;
+
+    public WorkflowNodePropertyList(WorkflowNode owner)
+    {
+        this.owner = owner;
+        CollectionChanged += OnCollectionChanged;
+    }
+
+    private void OnCollectionChanged(in NotifyCollectionChangedEventArgs<T> e)
     {
         switch (e.Action)
         {
+            case NotifyCollectionChangedAction.Add when e.IsSingleItem:
+            {
+                HandlePropertyAdded(e.NewItem);
+                break;
+            }
             case NotifyCollectionChangedAction.Add:
             {
-                HandlePropertyAdded((T)e.NewItems![0]!);
+                foreach (var property in e.NewItems) HandlePropertyAdded(property);
+                break;
+            }
+            case NotifyCollectionChangedAction.Remove when e.IsSingleItem:
+            {
+                HandlePropertyRemoved(e.OldItem);
                 break;
             }
             case NotifyCollectionChangedAction.Remove:
             {
-                HandlePropertyRemoved((T)e.OldItems![0]!);
+                foreach (var property in e.OldItems) HandlePropertyRemoved(property);
+                break;
+            }
+            case NotifyCollectionChangedAction.Replace when e.IsSingleItem:
+            {
+                HandlePropertyRemoved(e.OldItem);
+                HandlePropertyAdded(e.NewItem);
                 break;
             }
             case NotifyCollectionChangedAction.Replace:
             {
-                HandlePropertyRemoved((T)e.OldItems![0]!);
-                HandlePropertyAdded((T)e.NewItems![0]!);
+                foreach (var property in e.OldItems) HandlePropertyRemoved(property);
+                foreach (var property in e.NewItems) HandlePropertyAdded(property);
+                break;
+            }
+            case NotifyCollectionChangedAction.Reset:
+            {
+                foreach (var property in this) HandlePropertyRemoved(property);
                 break;
             }
         }
-        base.OnCollectionChanged(e);
-    }
-
-    protected override void ClearItems()
-    {
-        foreach (var property in this) HandlePropertyRemoved(property);
-        base.ClearItems();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void HandlePropertyAdded(T property)
     {
         property.Owner = owner;
+        property.Id = Interlocked.Increment(ref owner.propertyId);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

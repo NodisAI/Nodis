@@ -11,10 +11,10 @@ public class WorkflowNodeStatusToColorConverter : IValueConverter
     {
         return value switch
         {
-            WorkflowNodeStatus.NotStarted => Brushes.DimGray,
-            WorkflowNodeStatus.Running => Brushes.Orange,
-            WorkflowNodeStatus.Completed => Brushes.Green,
-            WorkflowNodeStatus.Failed => Brushes.DarkRed,
+            WorkflowNodeStates.NotStarted => Brushes.DimGray,
+            WorkflowNodeStates.Running => Brushes.Orange,
+            WorkflowNodeStates.Completed => Brushes.Green,
+            WorkflowNodeStates.Failed => Brushes.DarkRed,
             _ => Brushes.Transparent
         };
     }

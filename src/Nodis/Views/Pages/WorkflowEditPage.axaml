@@ -5,6 +5,5 @@
     xmlns:vm="clr-namespace:Nodis.ViewModels" xmlns:wf="clr-namespace:Nodis.Views.Workflow"
     d:DesignHeight="450" d:DesignWidth="800"
     x:TypeArguments="vm:WorkflowEditPageViewModel" mc:Ignorable="d">
-    <wf:WorkflowEditor>
-    </wf:WorkflowEditor>
+    <wf:WorkflowEditor/>
 </v:ReactiveUserControl>

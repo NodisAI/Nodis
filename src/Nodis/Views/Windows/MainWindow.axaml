@@ -19,8 +19,7 @@
     </suki:SukiWindow.Hosts>
 
     <suki:SukiSideMenu
-        Background="{DynamicResource SukiGlassCardOpaqueBackground}"
-        IsMenuExpanded="False"
+        Background="Transparent" IsMenuExpanded="False"
         ItemsSource="{Binding Pages}"
         SplitViewDisplayMode="CompactOverlay"/>
 </v:ReactiveSukiWindow>

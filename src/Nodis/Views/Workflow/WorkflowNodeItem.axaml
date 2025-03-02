@@ -1,28 +1,38 @@
 ﻿<Styles
     xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:ip="https://github.com/MahApps/IconPacks.Avalonia" xmlns:m="clr-namespace:Nodis.Models.Workflow"
-    xmlns:suki="https://github.com/kikipoulet/SukiUI" xmlns:v="using:Nodis.Views.Workflow"
-    xmlns:vc="clr-namespace:Nodis.ValueConverters">
+    xmlns:ip="https://github.com/MahApps/IconPacks.Avalonia" xmlns:mwf="using:Nodis.Models.Workflow"
+    xmlns:vc="using:Nodis.ValueConverters" xmlns:vwf="using:Nodis.Views.Workflow">
     <Design.PreviewWith>
-        <v:WorkflowNodeItem/>
+        <vwf:WorkflowNodeItem/>
     </Design.PreviewWith>
 
-    <Style Selector="v|WorkflowNodeItem">
+    <Style Selector="vwf|WorkflowNodeItem">
         <Style.Resources>
             <vc:WorkflowNodeStatusToColorConverter x:Key="StatusToColorConverter"/>
+            <Geometry x:Key="ControlPortGeometry">M3.86 4h9.77a3 3 90 012 .78l.1.11 6 7.48a1 1 90 01-.11 1.37l-6 5.48a3 3 90 01-2 .78h-9.77A1.84 1.84 90 012 18.18V5.82A1.84 1.84 90 013.86 4z</Geometry>
         </Style.Resources>
 
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Background="{DynamicResource SukiGlassCardBackground}" CornerRadius="8">
+                <Border x:Name="PART_DraggableRoot" CornerRadius="8">
+                    <Border.Styles>
+                        <Style Selector="TextBlock">
+                            <Setter Property="IsHitTestVisible" Value="False"/>
+                        </Style>
+                    </Border.Styles>
+
+                    <Border.Background>
+                        <SolidColorBrush Opacity="0.75" Color="{DynamicResource SukiGlassCardOpaqueBackground}"/>
+                    </Border.Background>
+
                     <Grid RowDefinitions="32,1,Auto,Auto">
                         <DockPanel Grid.Row="0" LastChildFill="True">
                             <Border
                                 x:Name="PART_StatusIndicator" DockPanel.Dock="Left"
                                 Width="16" Height="16"
                                 Margin="8"
-                                Background="{Binding Node.Status, Converter={StaticResource StatusToColorConverter}, RelativeSource={RelativeSource TemplatedParent}}"
-                                CornerRadius="8"/>
+                                Background="{Binding Node.State, Converter={StaticResource StatusToColorConverter}, RelativeSource={RelativeSource TemplatedParent}}"
+                                CornerRadius="8" IsHitTestVisible="False"/>
 
                             <TextBlock
                                 Margin="4,0" VerticalAlignment="Center"
@@ -37,7 +47,7 @@
                                     <MenuFlyout ItemsSource="{Binding Node.ContextMenuItems, RelativeSource={RelativeSource TemplatedParent}}">
                                         <MenuFlyout.ItemContainerTheme>
                                             <ControlTheme
-                                                x:DataType="m:WorkflowNodeMenuFlyoutItem"
+                                                x:DataType="mwf:WorkflowNodeMenuFlyoutItem"
                                                 BasedOn="{StaticResource SukiMenuItemStyle}"
                                                 TargetType="MenuItem">
                                                 <Setter Property="Header" Value="{Binding Header}"/>
@@ -73,89 +83,129 @@
                             </Button>
                         </DockPanel>
 
-                        <Border Grid.Row="1" Background="{DynamicResource SukiControlBorderBrush}"/>
+                        <Border
+                            Grid.Row="1"
+                            Background="{DynamicResource SukiControlBorderBrush}"
+                            IsHitTestVisible="False"/>
 
                         <UniformGrid
                             Grid.Row="2" Columns="2"
                             Rows="1">
-                            <ItemsControl ItemsSource="{Binding Node.Inputs, RelativeSource={RelativeSource TemplatedParent}}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="m:WorkflowNodeInputPort">
-                                        <Panel Height="20">
-                                            <Border
-                                                Width="10" Height="10"
-                                                Margin="11,0,0,0" HorizontalAlignment="Left"
-                                                VerticalAlignment="Center" CornerRadius="5">
-                                                <Border.Background>
-                                                    <SolidColorBrush Color="{Binding Color}"/>
-                                                </Border.Background>
-                                            </Border>
-                                            <TextBlock
-                                                Margin="25,0,0,0" VerticalAlignment="Center"
-                                                Text="{Binding Name}"/>
-                                        </Panel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <StackPanel IsHitTestVisible="False" Orientation="Vertical">
+                                <Panel
+                                    x:Name="PART_ControlInputPortPanel" Height="20"
+                                    IsVisible="{Binding Node.ControlInput, Converter={x:Static ObjectConverters.IsNotNull}, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <PathIcon
+                                        Width="10" Height="10"
+                                        Margin="11,0,0,0" HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"
+                                        Data="{StaticResource ControlPortGeometry}">
+                                        <PathIcon.Foreground>
+                                            <SolidColorBrush Color="{Binding Node.ControlInput.Color, FallbackValue={x:Null}, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        </PathIcon.Foreground>
+                                    </PathIcon>
+                                    <TextBlock
+                                        Margin="25,0,0,0" VerticalAlignment="Center"
+                                        Text="{Binding Node.ControlInput.Name, FallbackValue={x:Null}, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                </Panel>
 
-                            <ItemsControl ItemsSource="{Binding Node.Outputs, RelativeSource={RelativeSource TemplatedParent}}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="m:WorkflowNodeOutputPort">
-                                        <Panel
-                                            x:Name="PART_OutputPort" Height="20"
-                                            Background="Transparent">
-                                            <TextBlock
-                                                Margin="0,0,25,0" HorizontalAlignment="Right"
-                                                VerticalAlignment="Center" IsHitTestVisible="False"
-                                                Text="{Binding Name}"/>
-                                            <Border
-                                                Width="10" Height="10"
-                                                Margin="0,0,11,0" HorizontalAlignment="Right"
-                                                VerticalAlignment="Center" CornerRadius="5"
-                                                IsHitTestVisible="False">
-                                                <Border.Background>
-                                                    <SolidColorBrush Color="{Binding Color}"/>
-                                                </Border.Background>
-                                            </Border>
-                                        </Panel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                                <ItemsControl x:Name="PART_DataInputPortItemsControl" ItemsSource="{Binding Node.DataInputs.Bindable, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="mwf:WorkflowNodeDataInputPort">
+                                            <Panel x:Name="PART_DataInputPort">
+                                                <Panel
+                                                    Height="20" HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top">
+                                                    <Border
+                                                        Width="10" Height="10"
+                                                        Margin="11,0,0,0" HorizontalAlignment="Left"
+                                                        VerticalAlignment="Center" CornerRadius="5">
+                                                        <Border.Background>
+                                                            <SolidColorBrush Color="{Binding Color}"/>
+                                                        </Border.Background>
+                                                    </Border>
+                                                    <TextBlock
+                                                        Margin="25,0,0,0" VerticalAlignment="Center"
+                                                        Text="{Binding Name}"/>
+                                                </Panel>
+
+                                                <vwf:WorkflowNodeDataInput Margin="25,24,0,0" Data="{Binding Data}">
+                                                    <vwf:WorkflowNodeDataInput.IsVisible>
+                                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                            <Binding Converter="{x:Static ObjectConverters.IsNull}" Path="Connection"/>
+                                                            <Binding Path="HasData"/>
+                                                        </MultiBinding>
+                                                    </vwf:WorkflowNodeDataInput.IsVisible>
+                                                </vwf:WorkflowNodeDataInput>
+                                            </Panel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Vertical">
+                                <ItemsControl x:Name="PART_ControlOutputPortItemsControl" ItemsSource="{Binding Node.ControlOutputs.Bindable, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="mwf:WorkflowNodeControlOutputPort">
+                                            <Panel
+                                                x:Name="PART_ControlOutputPort" Height="20"
+                                                Background="Transparent">
+                                                <TextBlock
+                                                    Margin="0,0,25,0" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center" IsHitTestVisible="False"
+                                                    Text="{Binding Name}"/>
+                                                <PathIcon
+                                                    Width="10" Height="10"
+                                                    Margin="0,0,11,0" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center"
+                                                    Data="{StaticResource ControlPortGeometry}"
+                                                    IsHitTestVisible="False">
+                                                    <PathIcon.Foreground>
+                                                        <SolidColorBrush Color="{Binding Color}"/>
+                                                    </PathIcon.Foreground>
+                                                </PathIcon>
+                                            </Panel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <ItemsControl x:Name="PART_DataOutputPortItemsControl" ItemsSource="{Binding Node.DataOutputs.Bindable, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="mwf:WorkflowNodeDataOutputPort">
+                                            <Panel
+                                                x:Name="PART_DataOutputPort" Height="20"
+                                                Background="Transparent">
+                                                <TextBlock
+                                                    Margin="0,0,25,0" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center" IsHitTestVisible="False"
+                                                    Text="{Binding Name}"/>
+                                                <Border
+                                                    Width="10" Height="10"
+                                                    Margin="0,0,11,0" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center" CornerRadius="5"
+                                                    IsHitTestVisible="False">
+                                                    <Border.Background>
+                                                        <SolidColorBrush Color="{Binding Color}"/>
+                                                    </Border.Background>
+                                                </Border>
+                                            </Panel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
                         </UniformGrid>
 
                         <ItemsControl
-                            Grid.Row="3" Margin="8"
-                            ItemsSource="{Binding Node.Properties, RelativeSource={RelativeSource TemplatedParent}}">
+                            Grid.Row="3" Margin="11,8"
+                            ItemsSource="{Binding Node.Properties.Bindable, RelativeSource={RelativeSource TemplatedParent}}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="m:WorkflowNodeProperty">
+                                <DataTemplate DataType="mwf:WorkflowNodeProperty">
                                     <Panel Margin="0,0,0,8">
                                         <TextBlock Classes="h5" Text="{Binding Name}"/>
-                                        <ContentPresenter Margin="0,12,0,0" Content="{Binding}"/>
+                                        <vwf:WorkflowNodeDataInput Margin="0,16,0,0" Data="{Binding Data}"/>
                                     </Panel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
-
-                            <ItemsControl.DataTemplates>
-                                <DataTemplate DataType="m:WorkflowNodeStringProperty">
-                                    <TextBox Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                </DataTemplate>
-
-                                <DataTemplate DataType="m:WorkflowNodeIntegerProperty">
-                                    <NumericUpDown Increment="1" Value="{Binding Value, Mode=TwoWay}"/>
-                                </DataTemplate>
-
-                                <DataTemplate DataType="m:WorkflowNodeDecimalProperty">
-                                    <Slider Value="{Binding Value, Mode=TwoWay}"/>
-                                </DataTemplate>
-
-                                <DataTemplate DataType="m:WorkflowNodeBooleanProperty">
-                                    <CheckBox IsChecked="{Binding Value, Mode=TwoWay}"/>
-                                </DataTemplate>
-
-                                <DataTemplate DataType="m:WorkflowNodeSelectionProperty">
-                                    <ComboBox ItemsSource="{Binding Value}" SelectedItem="{Binding SelectedItem}"/>
-                                </DataTemplate>
-                            </ItemsControl.DataTemplates>
                         </ItemsControl>
                     </Grid>
                 </Border>

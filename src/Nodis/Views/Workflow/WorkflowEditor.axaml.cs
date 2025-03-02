@@ -1,12 +1,13 @@
-﻿using System.Collections.Specialized;
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Skia;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Nodis.Extensions;
 using Nodis.Models;
 using Nodis.Models.Workflow;
+using ObservableCollections;
+using VYaml.Serialization;
 
 namespace Nodis.Views.Workflow;
 
@@ -21,30 +22,46 @@ public partial class WorkflowEditor : UserControl
         set => SetValue(WorkflowContextProperty, value);
     }
 
+    private readonly ObservableDictionary<WorkflowNodePortConnection, WorkflowNodePortConnectionItem> connectionItems = [];
+
     public WorkflowEditor()
     {
         InitializeComponent();
 
-        WorkflowContext = new WorkflowContext();
+        WorkflowContext = new WorkflowContext();  // todo: delete me, just for debug
 
-        canvasTransformGroup.Children.Add(canvasScaleTransform);
-        canvasTransformGroup.Children.Add(canvasTranslateTransform);
-        NodeCanvas.RenderTransform = canvasTransformGroup;
+        ConnectionItemsControl.ItemsSource = connectionItems.CreateView(p => p.Value)
+            .ToNotifyCollectionChanged(SynchronizationContextCollectionEventDispatcher.Current);
 
-        backgroundTransformGroup.Children.Add(backgroundScaleTransform);
-        backgroundTransformGroup.Children.Add(backgroundTranslateTransform);
-        SquareMeshBackground.RenderTransform = backgroundTransformGroup;
+        transformGroup.Children.Add(scaleTransform);
+        transformGroup.Children.Add(translateTransform);
+        TransformRoot.RenderTransform = transformGroup;
+
+        gridDrawingBrush = GridBorder.Background.NotNull<DrawingBrush>();
+        compactGridDrawingBrush = CompactGridBorder.Background.NotNull<DrawingBrush>();
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property != WorkflowContextProperty) return;
+        connectionItems.Clear();
+        foreach (var wrapper in nodeMap.Values) wrapper.Disposable.Dispose();
+        if (change.NewValue is not WorkflowContext newCtx) return;
+        foreach (var node in newCtx.Nodes) HandleNodeAdded(node);
+        foreach (var connection in newCtx.Connections) HandleConnectionAdded(connection);
     }
 
     #region Transform
 
     private Point rightButtonPressedPoint;
-    private readonly TransformGroup canvasTransformGroup = new();
-    private readonly TranslateTransform canvasTranslateTransform = new();
-    private readonly ScaleTransform canvasScaleTransform = new();
-    private readonly TransformGroup backgroundTransformGroup = new();
-    private readonly TranslateTransform backgroundTranslateTransform = new();
-    private readonly ScaleTransform backgroundScaleTransform = new();
+    private readonly TransformGroup transformGroup = new();
+    private readonly TranslateTransform translateTransform = new();
+    private readonly ScaleTransform scaleTransform = new();
+    private readonly DrawingBrush gridDrawingBrush, compactGridDrawingBrush;
+    private const double InitialGridViewSize = 90d;
+    private const int CompactGridScale = 12;
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
@@ -65,14 +82,14 @@ public partial class WorkflowEditor : UserControl
         {
             if (Equals(e.Pointer.Captured, this))
             {
-                canvasTranslateTransform.X += point.Position.X - rightButtonPressedPoint.X;
-                canvasTranslateTransform.Y += point.Position.Y - rightButtonPressedPoint.Y;
+                translateTransform.X += point.Position.X - rightButtonPressedPoint.X;
+                translateTransform.Y += point.Position.Y - rightButtonPressedPoint.Y;
                 // ConstrainNodeTranslate();
                 CalculateBackgroundTransform();
                 rightButtonPressedPoint = point.Position;
                 e.Handled = true;
             }
-            else if ((point.Position - rightButtonPressedPoint).ToSKPoint().LengthSquared > 25f)
+            else if ((point.Position - rightButtonPressedPoint).LengthSquared() > 25d)
             {
                 Focus();
                 e.Pointer.Capture(this);
@@ -101,14 +118,14 @@ public partial class WorkflowEditor : UserControl
         var mousePositionBeforeTransform = e.GetPosition(NodeCanvas);
 
         // Perform the scaling
-        canvasScaleTransform.ScaleX *= scaleFactor;
-        canvasScaleTransform.ScaleY *= scaleFactor;
+        scaleTransform.ScaleX *= scaleFactor;
+        scaleTransform.ScaleY *= scaleFactor;
 
         var mousePositionAfterTransform = e.GetPosition(NodeCanvas);
 
         // Adjust the translation so that the point under the mouse remains in the same position
-        canvasTranslateTransform.X -= (mousePositionBeforeTransform.X - mousePositionAfterTransform.X) * canvasScaleTransform.ScaleX;
-        canvasTranslateTransform.Y -= (mousePositionBeforeTransform.Y - mousePositionAfterTransform.Y) * canvasScaleTransform.ScaleY;
+        translateTransform.X -= (mousePositionBeforeTransform.X - mousePositionAfterTransform.X) * scaleTransform.ScaleX;
+        translateTransform.Y -= (mousePositionBeforeTransform.Y - mousePositionAfterTransform.Y) * scaleTransform.ScaleY;
         // ConstrainNodeTranslate();
         CalculateBackgroundTransform();
 
@@ -119,79 +136,30 @@ public partial class WorkflowEditor : UserControl
 
     private void CalculateBackgroundTransform()
     {
-        // BUG: The background is not constrained to the canvas
+        var scaleX = scaleTransform.ScaleX;
+        var scaleY = scaleTransform.ScaleY;
+        var (x, y) = NodeCanvas.TranslatePoint(default, GridBorder) ?? default;
 
-        var scaleX = canvasScaleTransform.ScaleX;
-        var scaleY = canvasScaleTransform.ScaleY;
-        backgroundScaleTransform.ScaleX = scaleX;
-        backgroundScaleTransform.ScaleY = scaleY;
-
-        var xConstraint = 90 * scaleX;
-        var yConstraint = 90 * scaleY;
-
-        var x = canvasTranslateTransform.X;
-        var y = canvasTranslateTransform.Y;
-        // keep x in (-xConstraint, 0)
-        if (x > 0) x -= ((int)(x / xConstraint) + 1) * xConstraint;
-        else if (x < -xConstraint) x += ((int)(-x / xConstraint) + 1) * xConstraint;
-        // keep y in (-yConstraint, 0)
-        if (y > 0) y -= ((int)(y / yConstraint) + 1) * yConstraint;
-        else if (y < -yConstraint) y += ((int)(-y / yConstraint) + 1) * yConstraint;
-
-        backgroundTranslateTransform.X = x;
-        backgroundTranslateTransform.Y = y;
-
-        // we need to ensure that the background's bottom right corner is always visible
-        var bounds = Bounds;
-        SquareMeshBackground.MinWidth = bounds.Width / scaleX + x;
-        SquareMeshBackground.MinHeight = bounds.Height / scaleY + y;
+        gridDrawingBrush.DestinationRect = new RelativeRect(
+            x,
+            y,
+            InitialGridViewSize * scaleX,
+            InitialGridViewSize * scaleY,
+            RelativeUnit.Absolute);
+        compactGridDrawingBrush.DestinationRect = new RelativeRect(
+            x,
+            y,
+            InitialGridViewSize * scaleX / CompactGridScale,
+            InitialGridViewSize * scaleY / CompactGridScale,
+            RelativeUnit.Absolute);
     }
 
     #endregion
 
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        if (change.Property == WorkflowContextProperty)
-        {
-            if (change.OldValue is WorkflowContext oldContext)
-            {
-                oldContext.Nodes.CollectionChanged -= HandleNodesCollectionChanged;
-            }
-
-            if (change.NewValue is WorkflowContext newContext)
-            {
-                newContext.Nodes.CollectionChanged += HandleNodesCollectionChanged;
-            }
-        }
-
-        base.OnPropertyChanged(change);
-    }
+    #region NodeItem
 
     private record WorkflowNodeItemWrapper(WorkflowNodeItem Item, IDisposable Disposable);
     private readonly Dictionary<WorkflowNode, WorkflowNodeItemWrapper> nodeMap = new();
-
-    private void HandleNodesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        switch (e.Action)
-        {
-            case NotifyCollectionChangedAction.Add:
-            {
-                HandleNodeAdded((WorkflowNode)e.NewItems![0]!);
-                break;
-            }
-            case NotifyCollectionChangedAction.Remove:
-            {
-                HandleNodeRemoved((WorkflowNode)e.OldItems![0]!);
-                break;
-            }
-            case NotifyCollectionChangedAction.Replace:
-            {
-                HandleNodeRemoved((WorkflowNode)e.OldItems![0]!);
-                HandleNodeAdded((WorkflowNode)e.NewItems![0]!);
-                break;
-            }
-        }
-    }
 
     private void HandleNodeAdded(WorkflowNode node)
     {
@@ -203,6 +171,7 @@ public partial class WorkflowEditor : UserControl
         item.PointerPressed += HandleWorkflowNodeItemPointerPressed;
         item.PointerMoved += HandleWorkflowNodeItemPointerMoved;
         item.PointerReleased += HandleWorkflowNodeItemPointerReleased;
+        item.PortEvent += HandleWorkflowNodeItemPortEvent;
         NodeCanvas.Children.Add(item);
 
         nodeMap.Add(node, new WorkflowNodeItemWrapper(
@@ -217,6 +186,7 @@ public partial class WorkflowEditor : UserControl
                     item.PointerPressed -= HandleWorkflowNodeItemPointerPressed;
                     item.PointerMoved -= HandleWorkflowNodeItemPointerMoved;
                     item.PointerReleased -= HandleWorkflowNodeItemPointerReleased;
+                    item.PortEvent -= HandleWorkflowNodeItemPortEvent;
                 })));
     }
 
@@ -244,8 +214,8 @@ public partial class WorkflowEditor : UserControl
         if (workflowNodeItemPointerPressedPoint != null)
         {
             var currentPoint = e.GetPosition(this);
-            item.Node.X += (currentPoint.X - workflowNodeItemPointerPressedPoint.Value.X) / canvasScaleTransform.ScaleX;
-            item.Node.Y += (currentPoint.Y - workflowNodeItemPointerPressedPoint.Value.Y) / canvasScaleTransform.ScaleY;
+            item.Node.X += (currentPoint.X - workflowNodeItemPointerPressedPoint.Value.X) / scaleTransform.ScaleX;
+            item.Node.Y += (currentPoint.Y - workflowNodeItemPointerPressedPoint.Value.Y) / scaleTransform.ScaleY;
             workflowNodeItemPointerPressedPoint = currentPoint;
             e.Handled = true;
         }
@@ -256,6 +226,139 @@ public partial class WorkflowEditor : UserControl
         workflowNodeItemPointerPressedPoint = null;
     }
 
+    private void HandleWorkflowNodeItemPortEvent(WorkflowNodeItem sender, WorkflowNodeItemPortEventArgs e)
+    {
+        if (WorkflowContext == null) return;
+
+        switch (e.Type)
+        {
+            case WorkflowNodeItemPortEventType.Dragging:
+            {
+                var startPoint = sender.TranslatePoint(sender.GetPortRelativePoint(e.StartPort), TransformRoot) ?? default;
+                var endPoint = e.PointerEventArgs.GetPosition(TransformRoot);
+                PreviewConnectionPath.StrokeThickness = e.StartPort.StrokeThickness;
+                PreviewConnectionPath.IsVisible = true;
+                UpdatePreviewConnectionPath(e.StartPort.Color, e.StartPort.Color, startPoint, endPoint);
+                break;
+            }
+            case WorkflowNodeItemPortEventType.Drop:
+            {
+                PreviewConnectionPath.IsVisible = false;
+                break;
+            }
+            case WorkflowNodeItemPortEventType.Connecting:
+            {
+                var startPoint = sender.TranslatePoint(sender.GetPortRelativePoint(e.StartPort), TransformRoot) ?? default;
+                var targetNode = nodeMap[e.EndPort!.Owner!].Item;
+                var endPoint = targetNode.TranslatePoint(targetNode.GetPortRelativePoint(e.EndPort!), TransformRoot) ?? default;
+                PreviewConnectionPath.IsVisible = true;
+                UpdatePreviewConnectionPath(e.StartPort.Color, e.EndPort!.Color, startPoint, endPoint);
+                break;
+            }
+            case WorkflowNodeItemPortEventType.Connected:
+            {
+                PreviewConnectionPath.IsVisible = false;
+                var connection = new WorkflowNodePortConnection(e.StartPort.Owner!.Id, e.StartPort.Id, e.EndPort!.Owner!.Id, e.EndPort.Id);
+                if (WorkflowContext.AddConnection(connection) is { } previousConnection) HandleConnectionRemoved(previousConnection);
+                HandleConnectionAdded(connection);
+                break;
+            }
+        }
+
+        void UpdatePreviewConnectionPath(Color startColor, Color endColor, Point startPoint, Point endPoint)
+        {
+            var gradientStops = PreviewConnectionPath.Stroke.To<LinearGradientBrush>()!.GradientStops;
+            gradientStops[0].Color = startColor;
+            gradientStops[1].Color = endColor;
+
+            var midPointX = startPoint.X / 2 + endPoint.X / 2;
+            var pathFigure = PreviewConnectionPath.Data.To<PathGeometry>()!.Figures![0].To<PathFigure>();
+            pathFigure.StartPoint = startPoint;
+            var bezierSegment = pathFigure.Segments![0].To<BezierSegment>();
+            bezierSegment.Point1 = new Point(midPointX, startPoint.Y);
+            bezierSegment.Point2 = new Point(midPointX, endPoint.Y);
+            bezierSegment.Point3 = endPoint;
+        }
+    }
+
+
+    #endregion
+
+    #region ConnectionItem
+
+    public partial class WorkflowNodePortConnectionItem : ObservableObject
+    {
+        public WorkflowNode OutputNode { get; }
+
+        public WorkflowNode InputNode { get; }
+
+        public WorkflowNodePort OutputPort { get; }
+
+        public WorkflowNodePort InputPort { get; }
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Point1))]
+        [NotifyPropertyChangedFor(nameof(Point2))]
+        public partial Point StartPoint { get; private set; }
+
+        public Point Point1 => new(StartPoint.X / 2 + EndPoint.X / 2, StartPoint.Y);
+
+        public Point Point2 => new(StartPoint.X / 2 + EndPoint.X / 2, EndPoint.Y);
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(Point1))]
+        [NotifyPropertyChangedFor(nameof(Point2))]
+        public partial Point EndPoint { get; private set; }
+
+        private readonly WorkflowNodeItem outputItem, inputItem;
+
+        public WorkflowNodePortConnectionItem(WorkflowEditor editor, WorkflowNodePortConnection connection)
+        {
+            (OutputNode, (outputItem, _)) = editor.nodeMap.First(n => n.Key.Id == connection.OutputNodeId);
+            OutputPort = OutputNode.GetOutputPort(connection.OutputPortId) ??
+                throw new InvalidOperationException($"Start port not found: {connection.OutputPortId}");
+
+            (InputNode, (inputItem, _)) = editor.nodeMap.First(n => n.Key.Id == connection.InputNodeId);
+            InputPort = InputNode.GetInputPort(connection.InputPortId) ??
+                throw new InvalidOperationException($"End port not found: {connection.InputPortId}");
+
+            CalculateStartPoint();
+            CalculateEndPoint();
+
+            // since WorkflowNodePortConnectionItem's lifetime is shorter than WorkflowNodeItem, we don't need to unsubscribe
+            OutputNode.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(WorkflowNode.X) or nameof(WorkflowNode.Y)) CalculateStartPoint();
+            };
+            InputNode.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(WorkflowNode.X) or nameof(WorkflowNode.Y)) CalculateEndPoint();
+            };
+            outputItem.SizeChanged += (_, _) => CalculateStartPoint();
+            inputItem.SizeChanged += (_, _) => CalculateEndPoint();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void CalculateStartPoint() =>
+            StartPoint = outputItem.GetPortRelativePoint(OutputPort) + new Point(OutputNode.X, OutputNode.Y);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void CalculateEndPoint() =>
+            EndPoint = inputItem.GetPortRelativePoint(InputPort) + new Point(InputNode.X, InputNode.Y);
+    }
+
+    private void HandleConnectionAdded(WorkflowNodePortConnection connection)
+    {
+        connectionItems.Add(connection, new WorkflowNodePortConnectionItem(this, connection));
+    }
+
+    private void HandleConnectionRemoved(WorkflowNodePortConnection connection)
+    {
+        connectionItems.Remove(connection);
+    }
+
+    #endregion
+
     private void HandleMenuItemOnClick(object? sender, RoutedEventArgs e)
     {
         if (WorkflowContext is not { } ctx || sender is not MenuItem menuItem) return;
@@ -264,10 +367,26 @@ public partial class WorkflowEditor : UserControl
         {
             "Condition" => new WorkflowConditionNode(),
             "Constant" => new WorkflowConstantNode(),
+            "Delay" => new WorkflowDelayNode(),
             _ => throw new NotImplementedException()
         };
         node.X = position.X;
         node.Y = position.Y;
-        ctx.Nodes.Add(node);
+        ctx.AddNode(node);
+        HandleNodeAdded(node);
+    }
+
+    private async void HandleSaveButtonOnClick(object? sender, RoutedEventArgs e)
+    {
+        if (WorkflowContext is not { } ctx) return;
+        await using var stream = File.OpenWrite("workflow.yaml");
+        var memory = YamlSerializer.Serialize(ctx);
+        await stream.WriteAsync(memory);
+    }
+
+    private async void HandleLoadButtonOnClick(object? sender, RoutedEventArgs e)
+    {
+        await using var stream = File.OpenRead("workflow.yaml");
+        WorkflowContext = await YamlSerializer.DeserializeAsync<WorkflowContext>(stream);
     }
 }

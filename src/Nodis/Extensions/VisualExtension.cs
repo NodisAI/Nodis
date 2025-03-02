@@ -3,7 +3,7 @@ using Avalonia.LogicalTree;
 
 namespace Nodis.Extensions;
 
-public static class VisualExtension
+public static class AvaloniaExtension
 {
     public static bool IsChildOf(this StyledElement? child, StyledElement parent, StyledElement? stopAt = null)
     {
@@ -104,4 +104,6 @@ public static class VisualExtension
 
     public static ScrollViewer GetScrollViewer(this ItemsControl itemsControl) =>
         itemsControl.FindChild<ScrollViewer>() ?? throw new InvalidOperationException("ScrollViewer not found");
+
+    public static double LengthSquared(this Point point) => point.X * point.X + point.Y * point.Y;
 }

@@ -28,6 +28,7 @@
         <PackageReference Include="Markdig"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection"/>
         <PackageReference Include="Microsoft.PowerShell.Native"/>
+        <PackageReference Include="ObservableCollections" />
         <PackageReference Include="System.Reactive" />
         <PackageReference Include="VYaml"/>
     </ItemGroup>

@@ -1,10 +1,11 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Nodis.Extensions;
 using Nodis.Interfaces;
 using Nodis.Models;
+using ObservableCollections;
 using VYaml.Serialization;
 
 namespace Nodis.ViewModels;
@@ -17,7 +18,11 @@ public partial class NodeStorePageViewModel(
     private static string NodeFolderPath { get; } = Path.Combine(DataFolderPath, "Node");
     private static string SourcesFolderPath { get; } = Path.Combine(DataFolderPath, "Sources");
 
-    internal ObservableCollection<NodeWrapper> Nodes { get; } = [];
+    [field: AllowNull, MaybeNull]
+    internal NotifyCollectionChangedSynchronizedViewList<NodeWrapper> Nodes =>
+        field ??= nodes.ToNotifyCollectionChanged(SynchronizationContextCollectionEventDispatcher.Current);
+
+    private readonly ObservableList<NodeWrapper> nodes = [];
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanDownloadNode))]
     internal partial NodeWrapper? SelectedNode { get; set; }
@@ -179,12 +184,14 @@ public partial class NodeStorePageViewModel(
 
     protected internal override async Task ViewLoaded()
     {
-        await foreach (var node in LoadSourcesAsync())
-        {
-            Nodes.Add(node);
-        }
-
+        await foreach (var node in LoadSourcesAsync()) Nodes.Add(node);
         await base.ViewLoaded();
+    }
+
+    protected internal override Task ViewUnloaded()
+    {
+        Nodes.Dispose();
+        return base.ViewUnloaded();
     }
 
     private record SourceIndexEntry(string Url, string RelativePath)

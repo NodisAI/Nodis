@@ -24,8 +24,6 @@ public static class EnumerableExtension
         }
     }
 
-    public static ObservableCollection<T> ToObservableCollection<T>(this IEnumerable<T> enumerable) => new(enumerable);
-
 #if NET5_0_OR_GREATER
     public static Span<T> AsSpan<T>(this List<T> list) => CollectionsMarshal.AsSpan(list);
 
