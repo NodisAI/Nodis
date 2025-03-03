@@ -12,10 +12,10 @@ public partial class WorkflowConstantNode : WorkflowNode
     public override string Name => "Constant";
 
     [YamlMember("items")]
-    private List<WorkflowConstantNodeYamlItem> YamlItems
+    private IEnumerable<WorkflowConstantNodeYamlItem> YamlItems
     {
-        get => Properties.Select(p => new WorkflowConstantNodeYamlItem(p.Name, p.Data)).ToList();
-        set
+        get => Properties.Select(p => new WorkflowConstantNodeYamlItem(p.Name, p.Data));
+        init
         {
             Properties.Clear();
             foreach (var item in value)
