@@ -12,8 +12,7 @@ public partial class WorkflowConstantNode : WorkflowNode
     public override string Name => "Constant";
 
     [YamlMember("items")]
-    // TODO: I hope VYaml can supports private property serialization so that this can be well encapsulated
-    public List<WorkflowConstantNodeYamlItem> YamlItems
+    private List<WorkflowConstantNodeYamlItem> YamlItems
     {
         get => Properties.Select(p => new WorkflowConstantNodeYamlItem(p.Name, p.Data)).ToList();
         set

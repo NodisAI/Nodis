@@ -7,7 +7,6 @@
     <!-- Basic packages -->
     <PackageVersion Include="ObservableCollections" Version="3.3.3" />
     <PackageVersion Include="System.Reactive" Version="6.0.1" />
-    <PackageVersion Include="VYaml" Version="1.0.0" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
     <!-- Avalonia packages -->

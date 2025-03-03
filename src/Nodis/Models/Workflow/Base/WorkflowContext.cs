@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VYaml.Annotations;
+using VYaml.Serialization;
 
 namespace Nodis.Models.Workflow;
 
@@ -12,12 +13,10 @@ public partial class WorkflowContext : ObservableObject
     public WorkflowStartNode StartNode { get; }
 
     [YamlMember("nodes")]
-    // TODO: I hope VYaml can supports IReadOnlyHashSet so that this can be well encapsulated
-    public HashSet<WorkflowNode> Nodes => nodes;
+    public IReadOnlySet<WorkflowNode> Nodes => nodes;
 
     [YamlMember("connections")]
-    // TODO: I hope VYaml can supports IReadOnlyHashSet so that this can be well encapsulated
-    public HashSet<WorkflowNodePortConnection> Connections => connections;
+    public IReadOnlySet<WorkflowNodePortConnection> Connections => connections;
 
     [YamlIgnore]
     public WorkflowNodeStates State
@@ -44,7 +43,7 @@ public partial class WorkflowContext : ObservableObject
     }
 
     [YamlConstructor]
-    private WorkflowContext(HashSet<WorkflowNode> nodes, HashSet<WorkflowNodePortConnection> connections)
+    private WorkflowContext(IReadOnlySet<WorkflowNode> nodes, IReadOnlySet<WorkflowNodePortConnection> connections)
     {
         this.nodes.UnionWith(nodes);
         StartNode = this.nodes.OfType<WorkflowStartNode>().Single();
@@ -142,6 +141,45 @@ public partial class WorkflowContext : ObservableObject
 
         return null;
     }
+
+    #region Serialization
+
+    /// <summary>
+    /// IReadOnlySet is not supported by default (because it doesn't exist in netstandard2.1).
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    private class InterfaceReadonlySetFormatter<T> : CollectionFormatterBase<T, HashSet<T>, IReadOnlySet<T>>
+    {
+        protected override HashSet<T> Create(YamlSerializerOptions options) => [];
+        protected override void Add(HashSet<T> collection, T value, YamlSerializerOptions options) => collection.Add(value);
+        protected override IReadOnlySet<T> Complete(HashSet<T> intermediateCollection) => intermediateCollection;
+    }
+
+    static WorkflowContext()
+    {
+        BuiltinResolver.KnownGenericTypes.Add(typeof(IReadOnlySet<>), typeof(InterfaceReadonlySetFormatter<>));
+    }
+
+    private static YamlSerializerOptions YamlSerializerOptions => new()
+    {
+        Resolver = CompositeResolver.Create(
+            [
+                new WorkflowNodePortConnectionYamlFormatter()
+            ],
+            [
+                StandardResolver.Instance
+            ]
+        )
+    };
+
+    public ReadOnlyMemory<byte> SerializeToYaml() =>
+        YamlSerializer.Serialize(this, YamlSerializerOptions);
+
+    public static WorkflowContext DeserializeFromYaml(ReadOnlyMemory<byte> yaml) =>
+        YamlSerializer.Deserialize<WorkflowContext>(yaml, YamlSerializerOptions);
+
+    #endregion
+
 }
 
 #pragma warning restore CS0657

@@ -7,7 +7,6 @@ using Nodis.Extensions;
 using Nodis.Models;
 using Nodis.Models.Workflow;
 using ObservableCollections;
-using VYaml.Serialization;
 
 namespace Nodis.Views.Workflow;
 
@@ -379,14 +378,15 @@ public partial class WorkflowEditor : UserControl
     private async void HandleSaveButtonOnClick(object? sender, RoutedEventArgs e)
     {
         if (WorkflowContext is not { } ctx) return;
-        await using var stream = File.OpenWrite("workflow.yaml");
-        var memory = YamlSerializer.Serialize(ctx);
-        await stream.WriteAsync(memory);
+        await using var stream = new FileStream("workflow.yaml", FileMode.Create);
+        await stream.WriteAsync(ctx.SerializeToYaml());
     }
 
     private async void HandleLoadButtonOnClick(object? sender, RoutedEventArgs e)
     {
         await using var stream = File.OpenRead("workflow.yaml");
-        WorkflowContext = await YamlSerializer.DeserializeAsync<WorkflowContext>(stream);
+        var yaml = new byte[stream.Length];  // Should I use a ArrayPool here?
+        if (await stream.ReadAsync(yaml) != yaml.Length) throw new IOException("Failed to read the file.");
+        WorkflowContext = WorkflowContext.DeserializeFromYaml(yaml);
     }
 }

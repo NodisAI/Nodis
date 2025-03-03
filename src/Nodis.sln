@@ -15,6 +15,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ThirdParty", "ThirdParty", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SukiUI", "..\3rd\SukiUI\SukiUI\SukiUI.csproj", "{4DB1BE4B-32ED-4501-8313-B1DBAAC98F13}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VYaml", "..\3rd\VYaml\VYaml\VYaml.csproj", "{E17EF2FA-DCCB-4090-98E0-32DA39D37621}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VYaml.SourceGenerator", "..\3rd\VYaml\VYaml.SourceGenerator\VYaml.SourceGenerator.csproj", "{61C8D3FF-883E-46E5-8182-821E2311B95E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,8 +33,18 @@ Global
 		{4DB1BE4B-32ED-4501-8313-B1DBAAC98F13}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4DB1BE4B-32ED-4501-8313-B1DBAAC98F13}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4DB1BE4B-32ED-4501-8313-B1DBAAC98F13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E17EF2FA-DCCB-4090-98E0-32DA39D37621}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E17EF2FA-DCCB-4090-98E0-32DA39D37621}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E17EF2FA-DCCB-4090-98E0-32DA39D37621}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E17EF2FA-DCCB-4090-98E0-32DA39D37621}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61C8D3FF-883E-46E5-8182-821E2311B95E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61C8D3FF-883E-46E5-8182-821E2311B95E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61C8D3FF-883E-46E5-8182-821E2311B95E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61C8D3FF-883E-46E5-8182-821E2311B95E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4DB1BE4B-32ED-4501-8313-B1DBAAC98F13} = {E35D503E-7B7E-489D-9D8F-9819402F9290}
+		{E17EF2FA-DCCB-4090-98E0-32DA39D37621} = {E35D503E-7B7E-489D-9D8F-9819402F9290}
+		{61C8D3FF-883E-46E5-8182-821E2311B95E} = {E35D503E-7B7E-489D-9D8F-9819402F9290}
 	EndGlobalSection
 EndGlobal

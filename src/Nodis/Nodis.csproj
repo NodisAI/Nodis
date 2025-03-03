@@ -30,11 +30,12 @@
         <PackageReference Include="Microsoft.PowerShell.Native"/>
         <PackageReference Include="ObservableCollections" />
         <PackageReference Include="System.Reactive" />
-        <PackageReference Include="VYaml"/>
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\3rd\SukiUI\SukiUI\SukiUI.csproj"/>
+        <ProjectReference Include="..\..\3rd\VYaml\VYaml\VYaml.csproj" />
+        <ProjectReference Include="..\..\3rd\VYaml\VYaml.SourceGenerator\VYaml.SourceGenerator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     </ItemGroup>
 
     <ItemGroup>
