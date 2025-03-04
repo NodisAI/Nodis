@@ -65,13 +65,20 @@ public class WorkflowNodePropertyList<T> : ObservableList<T> where T : WorkflowN
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void HandlePropertyAdded(T property)
     {
+        if (property.Owner != null) throw new InvalidOperationException("Property already has an owner");
         property.Owner = owner;
-        property.Id = Interlocked.Increment(ref owner.propertyId);
+        property.Id = property.Id switch
+        {
+            < 0 => throw new InvalidOperationException("Property id must be greater than or equal to 0"),
+            0 => owner.GetAvailableMemberId(),
+            _ => property.Id
+        };
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void HandlePropertyRemoved(T property)
     {
         property.Owner = null;
+        property.Id = 0;
     }
 }

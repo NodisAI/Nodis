@@ -111,6 +111,8 @@ public class WorkflowNodeItem(WorkflowNode node) : TemplatedControl
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
+        if (Node.Owner?.State == WorkflowNodeStates.Running) return;
+
         if (e.Source is Panel { Name: "PART_ControlOutputPort" or "PART_DataOutputPort", DataContext: WorkflowNodePort port })
         {
             draggingPort = port;
@@ -129,6 +131,12 @@ public class WorkflowNodeItem(WorkflowNode node) : TemplatedControl
     {
         if (draggingPort != null)
         {
+            if (Node.Owner?.State == WorkflowNodeStates.Running)
+            {
+                PortEvent?.Invoke(this, new WorkflowNodeItemPortEventArgs(e, WorkflowNodeItemPortEventType.Drop, draggingPort, null));
+                return;
+            }
+
             e.Handled = true;
             connectingPort = null;
             if (Parent is not Canvas parent) return;
@@ -186,6 +194,12 @@ public class WorkflowNodeItem(WorkflowNode node) : TemplatedControl
     {
         if (draggingPort != null)
         {
+            if (Node.Owner?.State == WorkflowNodeStates.Running)
+            {
+                PortEvent?.Invoke(this, new WorkflowNodeItemPortEventArgs(e, WorkflowNodeItemPortEventType.Drop, draggingPort, null));
+                return;
+            }
+
             e.Handled = true;
             if (connectingPort == null)
             {

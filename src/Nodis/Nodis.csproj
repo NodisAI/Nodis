@@ -25,6 +25,7 @@
         <PackageReference Condition="$(DefineConstants.Contains(ENABLE_XAML_HOT_RELOAD))" Include="HotAvalonia"/>
         <PackageReference Include="HotAvalonia.Extensions" PrivateAssets="All"/>
         <PackageReference Include="IconPacks.Avalonia.EvaIcons"/>
+        <PackageReference Include="JsonPath.Net" />
         <PackageReference Include="Markdig"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection"/>
         <PackageReference Include="Microsoft.PowerShell.Native"/>
@@ -36,12 +37,5 @@
         <ProjectReference Include="..\..\3rd\SukiUI\SukiUI\SukiUI.csproj"/>
         <ProjectReference Include="..\..\3rd\VYaml\VYaml\VYaml.csproj" />
         <ProjectReference Include="..\..\3rd\VYaml\VYaml.SourceGenerator\VYaml.SourceGenerator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Compile Update="Views\Windows\MainWindow.axaml.cs">
-            <DependentUpon>MainWindow.axaml</DependentUpon>
-            <SubType>Code</SubType>
-        </Compile>
     </ItemGroup>
 </Project>

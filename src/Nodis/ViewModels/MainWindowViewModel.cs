@@ -16,7 +16,7 @@ public class MainWindowViewModel(IServiceProvider serviceProvider) : ReactiveVie
 
     private readonly ObservableList<SukiSideMenuItem> pages = [];
 
-    protected internal override Task ViewLoaded()
+    protected internal override Task ViewLoaded(CancellationToken cancellationToken)
     {
         pages.Reset(
             serviceProvider.GetServices<IMainWindowPage>().Select(
@@ -27,7 +27,7 @@ public class MainWindowViewModel(IServiceProvider serviceProvider) : ReactiveVie
                     Icon = new PackIconEvaIcons { Width = 24, Height = 24, Kind = p.Icon },
                     IsContentMovable = false
                 }));
-        return base.ViewLoaded();
+        return base.ViewLoaded(cancellationToken);
     }
 
     protected internal override Task ViewUnloaded()

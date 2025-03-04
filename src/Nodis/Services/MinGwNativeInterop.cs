@@ -1,16 +1,22 @@
 ﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using Nodis.Interfaces;
 using Nodis.Models;
 
 namespace Nodis.Services;
 
-// ReSharper disable once InconsistentNaming
-public class MinGWBashExecutor : IBashExecutor
+[SupportedOSPlatform("windows")]
+public class MinGwNativeInterop : INativeInterop
 {
     private string BashExecutablePath { get; } = Path.Combine(Environment.CurrentDirectory, "PortableGit", "bin", "bash.exe");
 
-    public IBashExecution Execute(BashExecutionOptions options, CancellationToken cancellationToken = default)
+    public void OpenUri(Uri uri)
+    {
+        Process.Start(new ProcessStartInfo(uri.ToString()) { UseShellExecute = true });
+    }
+
+    public IBashExecution BashExecute(BashExecutionOptions options)
     {
         options.EnvironmentVariables["OSTYPE"] = "msys";
         options.EnvironmentVariables["WORKING_DIR"] = GetUnixPath(options.WorkingDirectory) ?? "~";

@@ -118,10 +118,6 @@
                     IsVisible="{Binding $parent[vwf:WorkflowEditor].WorkflowContext.CanStop, FallbackValue=false}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <suki:Loading Width="20" Height="20"/>
-                        <ip:PackIconEvaIcons
-                            Width="20" Height="20"
-                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                            Kind="Square"/>
                         <TextBlock VerticalAlignment="Center" Text="Stop Workflow"/>
                     </StackPanel>
                 </Button>

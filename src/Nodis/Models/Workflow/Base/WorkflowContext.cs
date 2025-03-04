@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VYaml.Annotations;
 using VYaml.Serialization;
@@ -18,18 +19,9 @@ public partial class WorkflowContext : ObservableObject
     [YamlMember("connections")]
     public IReadOnlySet<WorkflowNodePortConnection> Connections => connections;
 
+    [ObservableProperty]
     [YamlIgnore]
-    public WorkflowNodeStates State
-    {
-        get
-        {
-            var state = nodes.Aggregate(WorkflowNodeStates.NotStarted, (current, node) => current | node.State);
-            if (state.HasFlag(WorkflowNodeStates.Running)) return WorkflowNodeStates.Running;
-            if (state.HasFlag(WorkflowNodeStates.Failed)) return WorkflowNodeStates.Failed;
-            if (state.HasFlag(WorkflowNodeStates.Completed)) return WorkflowNodeStates.Completed;
-            return WorkflowNodeStates.NotStarted;
-        }
-    }
+    public partial WorkflowNodeStates State { get; private set; }
 
     private readonly HashSet<WorkflowNode> nodes = [];
     private readonly Dictionary<int, WorkflowNode> nodesMap = [];
@@ -37,7 +29,7 @@ public partial class WorkflowContext : ObservableObject
 
     public WorkflowContext()
     {
-        StartNode = new WorkflowStartNode();
+        StartNode = new WorkflowStartNode { Owner = this };
         nodes.Add(StartNode);
         nodesMap.Add(StartNode.Id, StartNode);
     }
@@ -46,6 +38,11 @@ public partial class WorkflowContext : ObservableObject
     private WorkflowContext(IReadOnlySet<WorkflowNode> nodes, IReadOnlySet<WorkflowNodePortConnection> connections)
     {
         this.nodes.UnionWith(nodes);
+        foreach (var node in nodes)
+        {
+            node.Owner = this;
+            node.PropertyChanged += HandleNodeOnPropertyChanged;
+        }
         StartNode = this.nodes.OfType<WorkflowStartNode>().Single();
         nodesMap = this.nodes.ToDictionary(n => n.Id);
         foreach (var connection in connections) AddConnection(connection);
@@ -58,7 +55,7 @@ public partial class WorkflowContext : ObservableObject
     [property: YamlIgnore]
     private void Start()
     {
-        Stop();
+        foreach (var node in nodes) node.Reset();
         StartNode.Start();
     }
 
@@ -69,8 +66,7 @@ public partial class WorkflowContext : ObservableObject
     [property: YamlIgnore]
     private void Stop()
     {
-        StartNode.Stop();
-        foreach (var node in nodes) node.CancelExecution();
+        foreach (var node in nodes) node.Stop();
     }
 
     public void AddNode(WorkflowNode node)
@@ -78,14 +74,34 @@ public partial class WorkflowContext : ObservableObject
         if (node is WorkflowStartNode) throw new InvalidOperationException("A workflow can only have one start node");
         if (!nodesMap.TryAdd(node.Id, node)) throw new InvalidOperationException("Node already exists");
         nodes.Add(node);
-        node.PropertyChanged += (_, _) =>
+        node.PropertyChanged += HandleNodeOnPropertyChanged;
+    }
+
+    public void RemoveNode(WorkflowNode node)
+    {
+        if (!nodes.Remove(node)) return;
+        nodesMap.Remove(node.Id);
+        foreach (var connection in connections.Where(c => c.InputNodeId == node.Id || c.OutputNodeId == node.Id).ToArray())
+            connections.Remove(connection);
+        node.PropertyChanged -= HandleNodeOnPropertyChanged;
+    }
+
+    private void HandleNodeOnPropertyChanged(object? o, PropertyChangedEventArgs propertyChangedEventArgs)
+    {
+        State = CalculateState();
+        OnPropertyChanged(nameof(CanStart));
+        StartCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanStop));
+        StopCommand.NotifyCanExecuteChanged();
+
+        WorkflowNodeStates CalculateState()
         {
-            OnPropertyChanged(nameof(State));
-            OnPropertyChanged(nameof(CanStart));
-            OnPropertyChanged(nameof(CanStop));
-            StartCommand.NotifyCanExecuteChanged();
-            StopCommand.NotifyCanExecuteChanged();
-        };
+            var states = nodes.Aggregate(WorkflowNodeStates.NotStarted, (current, node) => current | node.State);
+            if (states.HasFlag(WorkflowNodeStates.Running)) return WorkflowNodeStates.Running;
+            if (states.HasFlag(WorkflowNodeStates.Failed)) return WorkflowNodeStates.Failed;
+            if (states.HasFlag(WorkflowNodeStates.Completed)) return WorkflowNodeStates.Completed;
+            return WorkflowNodeStates.NotStarted;
+        }
     }
 
     /// <summary>

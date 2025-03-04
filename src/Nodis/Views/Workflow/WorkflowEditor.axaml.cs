@@ -227,7 +227,11 @@ public partial class WorkflowEditor : UserControl
 
     private void HandleWorkflowNodeItemPortEvent(WorkflowNodeItem sender, WorkflowNodeItemPortEventArgs e)
     {
-        if (WorkflowContext == null) return;
+        if (WorkflowContext == null || WorkflowContext.State == WorkflowNodeStates.Running)
+        {
+            PreviewConnectionPath.IsVisible = false;
+            return;
+        }
 
         switch (e.Type)
         {
@@ -378,7 +382,7 @@ public partial class WorkflowEditor : UserControl
     private async void HandleSaveButtonOnClick(object? sender, RoutedEventArgs e)
     {
         if (WorkflowContext is not { } ctx) return;
-        await using var stream = new FileStream("workflow.yaml", FileMode.Create);
+        await using var stream = File.Create("workflow.yaml");
         await stream.WriteAsync(ctx.SerializeToYaml());
     }
 

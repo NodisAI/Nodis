@@ -16,29 +16,8 @@ public abstract class WorkflowNodePort(string name) : WorkflowNodeMember(name)
     public abstract double StrokeThickness { get; }
 }
 
-public interface IWorkflowNodeOutputPort<TInputPort, TOutputPort>
-    where TInputPort : IWorkflowNodeInputPort<TInputPort, TOutputPort>
-    where TOutputPort : IWorkflowNodeOutputPort<TInputPort, TOutputPort>
-{
-    /// <summary>
-    /// An output port can have multiple connections.
-    /// </summary>
-    HashSet<TInputPort> Connections { get; }
-}
-
-public interface IWorkflowNodeInputPort<TInputPort, TOutputPort>
-    where TInputPort : IWorkflowNodeInputPort<TInputPort, TOutputPort>
-    where TOutputPort : IWorkflowNodeOutputPort<TInputPort, TOutputPort>
-{
-    /// <summary>
-    /// An input port can only have one connection.
-    /// </summary>
-    TOutputPort? Connection { get; set; }
-}
-
 [YamlObject]
-public partial class WorkflowNodeControlOutputPort(string name = "") :
-    WorkflowNodePort(name), IWorkflowNodeOutputPort<WorkflowNodeControlInputPort, WorkflowNodeControlOutputPort>
+public partial class WorkflowNodeControlOutputPort(string name = "") : WorkflowNodePort(name)
 {
     [YamlIgnore]
     public override Color Color { get; } = Color.FromRgb(255, 255, 255);
@@ -51,12 +30,11 @@ public partial class WorkflowNodeControlOutputPort(string name = "") :
 
     [ObservableProperty]
     [YamlIgnore]
-    public partial bool CanExecute { get; set; }
+    public partial bool? CanExecute { get; set; }
 }
 
 [YamlObject]
-public partial class WorkflowNodeControlInputPort(string name = "") :
-    WorkflowNodePort(name), IWorkflowNodeInputPort<WorkflowNodeControlInputPort, WorkflowNodeControlOutputPort>
+public partial class WorkflowNodeControlInputPort(string name = "") : WorkflowNodePort(name)
 {
     [YamlIgnore]
     public override Color Color { get; } = Color.FromRgb(255, 255, 255);
@@ -102,8 +80,7 @@ public abstract class WorkflowNodeDataPort(string name, WorkflowNodeData data) :
 }
 
 [YamlObject]
-public partial class WorkflowNodeDataOutputPort :
-    WorkflowNodeDataPort, IWorkflowNodeOutputPort<WorkflowNodeDataInputPort, WorkflowNodeDataOutputPort>
+public partial class WorkflowNodeDataOutputPort : WorkflowNodeDataPort
 {
     public WorkflowNodeDataOutputPort(string name, WorkflowNodeData data) : base(name, data)
     {
@@ -124,8 +101,7 @@ public partial class WorkflowNodeDataOutputPort :
 }
 
 [YamlObject]
-public partial class WorkflowNodeDataInputPort :
-    WorkflowNodeDataPort, IWorkflowNodeInputPort<WorkflowNodeDataInputPort, WorkflowNodeDataOutputPort>
+public partial class WorkflowNodeDataInputPort : WorkflowNodeDataPort
 {
     [YamlConstructor]
     public WorkflowNodeDataInputPort(string name, WorkflowNodeData data) : base(name, data)

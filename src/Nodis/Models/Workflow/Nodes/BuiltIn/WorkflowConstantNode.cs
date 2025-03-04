@@ -84,6 +84,7 @@ public partial class WorkflowConstantNode : WorkflowNode
         var data = WorkflowNodeData.CreateDefault(dataType);
         Properties.Add(new WorkflowNodeProperty(name, data));
         DataOutputs.Add(new WorkflowNodeDataOutputPort(name, data));
+        OnPropertyChanged(nameof(ContextMenuItems));
     }
 
     [RelayCommand]
@@ -91,6 +92,7 @@ public partial class WorkflowConstantNode : WorkflowNode
     {
         Properties.Remove(property);
         DataOutputs.Remove(DataOutputs.First(p => p.Name == property.Name));
+        OnPropertyChanged(nameof(ContextMenuItems));
     }
 
     protected override Task ExecuteImplAsync(CancellationToken cancellationToken)

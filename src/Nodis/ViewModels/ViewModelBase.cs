@@ -23,7 +23,7 @@ public abstract class ReactiveViewModelBase : ObservableValidator
         return true;
     }
 
-    protected internal virtual Task ViewLoaded() => Task.CompletedTask;
+    protected internal virtual Task ViewLoaded(CancellationToken cancellationToken) => Task.CompletedTask;
 
     protected internal virtual Task ViewUnloaded() => Task.CompletedTask;
 
@@ -48,12 +48,15 @@ public abstract class ReactiveViewModelBase : ObservableValidator
 
     public void Bind(Control target)
     {
+        CancellationTokenSource? cancellationTokenSource = null;
+
         target.DataContext = this;
         target.Loaded += async (_, _) =>
         {
             try
             {
-                await ViewLoaded();
+                cancellationTokenSource = new CancellationTokenSource();
+                await ViewLoaded(cancellationTokenSource.Token);
             }
             catch (Exception e)
             {
@@ -66,6 +69,12 @@ public abstract class ReactiveViewModelBase : ObservableValidator
             try
             {
                 await ViewUnloaded();
+
+                if (cancellationTokenSource != null)
+                {
+                    await cancellationTokenSource.CancelAsync();
+                    cancellationTokenSource.Dispose();
+                }
             }
             catch (Exception e)
             {

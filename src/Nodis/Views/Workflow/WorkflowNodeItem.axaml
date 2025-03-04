@@ -44,30 +44,32 @@
                                 VerticalAlignment="Center"
                                 Foreground="{DynamicResource SukiText}">
                                 <Button.Flyout>
-                                    <MenuFlyout ItemsSource="{Binding Node.ContextMenuItems, RelativeSource={RelativeSource TemplatedParent}}">
-                                        <MenuFlyout.ItemContainerTheme>
-                                            <ControlTheme
-                                                x:DataType="mwf:WorkflowNodeMenuFlyoutItem"
-                                                BasedOn="{StaticResource SukiMenuItemStyle}"
-                                                TargetType="MenuItem">
-                                                <Setter Property="Header" Value="{Binding Header}"/>
-                                                <!-- <Setter Property="ItemsSource" Value="{Binding Items}"/> -->
-                                                <Setter Property="Command" Value="{Binding Command}"/>
-                                                <Setter Property="CommandParameter" Value="{Binding CommandParameter}"/>
-                                                <Setter Property="Icon">
-                                                    <Setter.Value>
-                                                        <Template>
-                                                            <ip:PackIconEvaIcons
-                                                                Width="12" Height="12"
-                                                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                Kind="{Binding Icon}"/>
-                                                        </Template>
-                                                    </Setter.Value>
-                                                </Setter>
-                                                <Setter Property="Foreground" Value="{Binding Foreground}"/>
-                                            </ControlTheme>
-                                        </MenuFlyout.ItemContainerTheme>
-                                    </MenuFlyout>
+                                    <Flyout>
+                                        <ContextMenu ItemsSource="{Binding Node.ContextMenuItems, RelativeSource={RelativeSource TemplatedParent}}">
+                                            <ContextMenu.ItemContainerTheme>
+                                                <ControlTheme
+                                                    x:DataType="mwf:WorkflowNodeMenuFlyoutItem"
+                                                    BasedOn="{StaticResource SukiMenuItemStyle}"
+                                                    TargetType="MenuItem">
+                                                    <Setter Property="Header" Value="{Binding Header}"/>
+                                                    <!-- <Setter Property="ItemsSource" Value="{Binding Items}"/> -->
+                                                    <Setter Property="Command" Value="{Binding Command}"/>
+                                                    <Setter Property="CommandParameter" Value="{Binding CommandParameter}"/>
+                                                    <Setter Property="Icon">
+                                                        <Setter.Value>
+                                                            <Template>
+                                                                <ip:PackIconEvaIcons
+                                                                    Width="12" Height="12"
+                                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                    Kind="{Binding Icon}"/>
+                                                            </Template>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                    <Setter Property="Foreground" Value="{Binding Foreground}"/>
+                                                </ControlTheme>
+                                            </ContextMenu.ItemContainerTheme>
+                                        </ContextMenu>
+                                    </Flyout>
                                 </Button.Flyout>
 
                                 <Button.Template>

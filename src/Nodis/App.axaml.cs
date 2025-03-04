@@ -26,11 +26,10 @@ public class App : Application, IKeyedServiceProvider
 
         ServiceCollection
             .AddSingleton<HttpClient>()
-            .AddSingleton<IBashExecutor>(Environment.OSVersion.Platform switch
-            {
-                PlatformID.Win32NT => new MinGWBashExecutor(),
-                _ => throw new PlatformNotSupportedException()
-            });
+            .AddSingleton<INativeInterop>(
+                _ => new MinGwNativeInterop()
+            )
+            .AddSingleton<IEnvironmentManager, LocalEnvironmentManager>();
 
         #endregion
 

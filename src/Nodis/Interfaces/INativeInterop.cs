@@ -2,9 +2,11 @@
 
 namespace Nodis.Interfaces;
 
-public interface IBashExecutor
+public interface INativeInterop
 {
-    IBashExecution Execute(BashExecutionOptions options, CancellationToken cancellationToken = default);
+    void OpenUri(Uri uri);
+
+    IBashExecution BashExecute(BashExecutionOptions options);
 }
 
 public interface IBashExecution

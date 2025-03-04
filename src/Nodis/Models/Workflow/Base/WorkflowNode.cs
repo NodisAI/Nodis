@@ -46,12 +46,13 @@ public record WorkflowNodeMenuFlyoutItem(
 public abstract partial class WorkflowNode : ObservableObject
 {
     private static int globalId;
-    internal int propertyId;
+
+    [YamlIgnore]
+    public WorkflowContext? Owner { get; internal set; }
 
     [YamlMember("id")]
     public int Id { get; protected init; }
 
-    [YamlIgnore]
     public abstract string Name { get; }
 
     [ObservableProperty]
@@ -100,7 +101,12 @@ public abstract partial class WorkflowNode : ObservableObject
     {
         get
         {
-            yield return new WorkflowNodeMenuFlyoutItem("Delete", PackIconEvaIconsKind.Trash2, null, Type: NotificationType.Error);
+            yield return new WorkflowNodeMenuFlyoutItem(
+                "Remove",
+                PackIconEvaIconsKind.Trash2,
+                null,  // todo
+                this,
+                NotificationType.Error);
         }
     }
 
@@ -127,6 +133,20 @@ public abstract partial class WorkflowNode : ObservableObject
     public override int GetHashCode() => Id;
     public override bool Equals(object? obj) => obj is WorkflowNode other && Id == other.Id;
 
+    internal int GetAvailableMemberId()
+    {
+        var id = 0;
+        while (true)
+        {
+            id++;
+            if (ControlInput?.Id == id) continue;
+            if (ControlOutputs.Any(p => p.Id == id)) continue;
+            if (DataInputs.Any(p => p.Id == id)) continue;
+            if (DataOutputs.Any(p => p.Id == id)) continue;
+            return id;
+        }
+    }
+
     public WorkflowNodePort? GetInputPort(int id) =>
         ControlInput?.Id == id ? ControlInput : DataInputs.FirstOrDefault(p => p.Id == id);
 
@@ -138,7 +158,7 @@ public abstract partial class WorkflowNode : ObservableObject
     private CancellationTokenSource? cancellationTokenSource;
     private readonly object executeLock = new();
 
-    public void CancelExecution()
+    internal void Reset()
     {
         lock (executeLock)
         {
@@ -149,17 +169,35 @@ public abstract partial class WorkflowNode : ObservableObject
                 cancellationTokenSource = null;
             }
 
+            foreach (var controlOutput in ControlOutputs) controlOutput.CanExecute = null;
             State = WorkflowNodeStates.NotStarted;
+        }
+    }
+
+    internal void Stop()
+    {
+        lock (executeLock)
+        {
+            if (cancellationTokenSource is not null)
+            {
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Dispose();
+                cancellationTokenSource = null;
+            }
         }
     }
 
     private async void HandleControlInputPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName != nameof(WorkflowNodeControlInputPort.ShouldExecute)) return;
         var shouldExecute = sender.To<WorkflowNodeControlInputPort>()!.ShouldExecute;
 
         CancellationToken cancellationToken;
         lock (executeLock)
         {
+            if (State == WorkflowNodeStates.Running && shouldExecute ||
+                State != WorkflowNodeStates.Running && !shouldExecute) return;
+
             if (cancellationTokenSource is not null)
             {
                 cancellationTokenSource.Cancel();
