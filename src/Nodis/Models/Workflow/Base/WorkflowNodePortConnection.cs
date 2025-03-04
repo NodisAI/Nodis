@@ -6,7 +6,7 @@ using VYaml.Serialization;
 namespace Nodis.Models.Workflow;
 
 [YamlObject]
-public readonly partial record struct WorkflowNodePortConnection(int OutputNodeId, int OutputPortId, int InputNodeId, int InputPortId);
+public readonly partial record struct WorkflowNodePortConnection(int OutputNodeId, int OutputPinId, int InputNodeId, int InputPinId);
 
 /// <summary>
 /// Serializes and deserializes a <see cref="WorkflowNodePortConnection"/> as a 4-element array.
@@ -17,9 +17,9 @@ internal class WorkflowNodePortConnectionYamlFormatter : IYamlFormatter<Workflow
     {
         emitter.BeginSequence();
         context.Serialize(ref emitter, value.OutputNodeId);
-        context.Serialize(ref emitter, value.OutputPortId);
+        context.Serialize(ref emitter, value.OutputPinId);
         context.Serialize(ref emitter, value.InputNodeId);
-        context.Serialize(ref emitter, value.InputPortId);
+        context.Serialize(ref emitter, value.InputPinId);
         emitter.EndSequence();
     }
 
@@ -27,11 +27,11 @@ internal class WorkflowNodePortConnectionYamlFormatter : IYamlFormatter<Workflow
     {
         parser.ReadWithVerify(ParseEventType.SequenceStart);
         var outputNodeId = context.DeserializeWithAlias<int>(ref parser);
-        var outputPortId = context.DeserializeWithAlias<int>(ref parser);
+        var OutputPinId = context.DeserializeWithAlias<int>(ref parser);
         var inputNodeId = context.DeserializeWithAlias<int>(ref parser);
-        var inputPortId = context.DeserializeWithAlias<int>(ref parser);
+        var InputPinId = context.DeserializeWithAlias<int>(ref parser);
         parser.ReadWithVerify(ParseEventType.SequenceEnd);
 
-        return new WorkflowNodePortConnection(outputNodeId, outputPortId, inputNodeId, inputPortId);
+        return new WorkflowNodePortConnection(outputNodeId, OutputPinId, inputNodeId, InputPinId);
     }
 }

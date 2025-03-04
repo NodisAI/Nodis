@@ -10,9 +10,9 @@ public partial class WorkflowDelayNode : WorkflowNode
 
     public WorkflowDelayNode()
     {
-        ControlInput = new WorkflowNodeControlInputPort();
-        ControlOutputs.Add(new WorkflowNodeControlOutputPort());
-        DataInputs.Add(new WorkflowNodeDataInputPort("seconds", new WorkflowNodeFloatData { Value = 1f }, true));
+        ControlInput = new WorkflowNodeControlInputPin();
+        ControlOutputs.Add(new WorkflowNodeControlOutputPin());
+        DataInputs.Add(new WorkflowNodeDataInputPin("seconds", new WorkflowNodeFloatData { Value = 1f }, true));
     }
 
     protected override Task ExecuteImplAsync(CancellationToken cancellationToken) =>

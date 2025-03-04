@@ -6,7 +6,7 @@ namespace Nodis.Models.Workflow;
 
 /// <summary>
 /// <see cref="WorkflowNodeData"/> is the base class for all data types
-/// that can be stored in a <see cref="WorkflowNodeProperty"/> or <see cref="WorkflowNodePort"/>.
+/// that can be stored in a <see cref="WorkflowNodeProperty"/> or <see cref="WorkflowNodePin"/>.
 /// It defines the <see cref="Value"/> property that stores the actual data, and a corresponding <see cref="Type"/> property.
 /// </summary>
 /// <remarks>

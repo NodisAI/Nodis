@@ -64,7 +64,7 @@ public abstract partial class WorkflowNode : ObservableObject
     public partial double Y { get; set; }
 
     [YamlIgnore]
-    public WorkflowNodeControlInputPort? ControlInput
+    public WorkflowNodeControlInputPin? ControlInput
     {
         get;
         protected set
@@ -85,13 +85,13 @@ public abstract partial class WorkflowNode : ObservableObject
     }
 
     [YamlIgnore]
-    public WorkflowNodePropertyList<WorkflowNodeControlOutputPort> ControlOutputs { get; }
+    public WorkflowNodePropertyList<WorkflowNodeControlOutputPin> ControlOutputs { get; }
 
     [YamlIgnore]
-    public WorkflowNodePropertyList<WorkflowNodeDataInputPort> DataInputs { get; }
+    public WorkflowNodePropertyList<WorkflowNodeDataInputPin> DataInputs { get; }
 
     [YamlIgnore]
-    public WorkflowNodePropertyList<WorkflowNodeDataOutputPort> DataOutputs { get; }
+    public WorkflowNodePropertyList<WorkflowNodeDataOutputPin> DataOutputs { get; }
 
     [YamlIgnore]
     public WorkflowNodePropertyList<WorkflowNodeProperty> Properties { get; }
@@ -122,9 +122,9 @@ public abstract partial class WorkflowNode : ObservableObject
     private WorkflowNode(int id)
     {
         Id = id;
-        ControlOutputs = new WorkflowNodePropertyList<WorkflowNodeControlOutputPort>(this);
-        DataInputs = new WorkflowNodePropertyList<WorkflowNodeDataInputPort>(this);
-        DataOutputs = new WorkflowNodePropertyList<WorkflowNodeDataOutputPort>(this);
+        ControlOutputs = new WorkflowNodePropertyList<WorkflowNodeControlOutputPin>(this);
+        DataInputs = new WorkflowNodePropertyList<WorkflowNodeDataInputPin>(this);
+        DataOutputs = new WorkflowNodePropertyList<WorkflowNodeDataOutputPin>(this);
         Properties = new WorkflowNodePropertyList<WorkflowNodeProperty>(this);
     }
 
@@ -147,11 +147,11 @@ public abstract partial class WorkflowNode : ObservableObject
         }
     }
 
-    public WorkflowNodePort? GetInputPort(int id) =>
+    public WorkflowNodePin? GetInputPin(int id) =>
         ControlInput?.Id == id ? ControlInput : DataInputs.FirstOrDefault(p => p.Id == id);
 
-    public WorkflowNodePort? GetOutputPort(int id) =>
-        ControlOutputs.FirstOrDefault<WorkflowNodePort>(p => p.Id == id) ?? DataOutputs.FirstOrDefault(p => p.Id == id);
+    public WorkflowNodePin? GetOutputPin(int id) =>
+        ControlOutputs.FirstOrDefault<WorkflowNodePin>(p => p.Id == id) ?? DataOutputs.FirstOrDefault(p => p.Id == id);
 
     #region Execution
 
@@ -189,8 +189,8 @@ public abstract partial class WorkflowNode : ObservableObject
 
     private async void HandleControlInputPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(WorkflowNodeControlInputPort.ShouldExecute)) return;
-        var shouldExecute = sender.To<WorkflowNodeControlInputPort>()!.ShouldExecute;
+        if (e.PropertyName != nameof(WorkflowNodeControlInputPin.ShouldExecute)) return;
+        var shouldExecute = sender.To<WorkflowNodeControlInputPin>()!.ShouldExecute;
 
         CancellationToken cancellationToken;
         lock (executeLock)

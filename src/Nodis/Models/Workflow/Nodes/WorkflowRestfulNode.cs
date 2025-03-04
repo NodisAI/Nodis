@@ -17,10 +17,10 @@ public partial class WorkflowRestfulNode : WorkflowUserNode
 
     public WorkflowRestfulNode(string name) : base(name)
     {
-        ControlInput = new WorkflowNodeControlInputPort();
-        ControlOutputs.Add(new WorkflowNodeControlOutputPort("Success"));
-        ControlOutputs.Add(new WorkflowNodeControlOutputPort("Failure"));
-        DataOutputs.Add(new WorkflowNodeDataOutputPort("Status code", new WorkflowNodeIntegerData()));
+        ControlInput = new WorkflowNodeControlInputPin();
+        ControlOutputs.Add(new WorkflowNodeControlOutputPin("Success"));
+        ControlOutputs.Add(new WorkflowNodeControlOutputPin("Failure"));
+        DataOutputs.Add(new WorkflowNodeDataOutputPin("Status code", new WorkflowNodeIntegerData()));
     }
 
     protected override async Task ExecuteImplAsync(CancellationToken cancellationToken)
@@ -122,7 +122,7 @@ public partial class WorkflowRestfulNode : WorkflowUserNode
     }
 
     /// <summary>
-    /// replace all $id in input with the corresponding port in DataInputs. \$id will be escaped.
+    /// replace all $id in input with the corresponding pin in DataInputs. \$id will be escaped.
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>

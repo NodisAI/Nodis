@@ -117,23 +117,23 @@ public partial class WorkflowContext : ObservableObject
         if (!nodesMap.TryGetValue(connection.InputNodeId, out var inputNode))
             throw new InvalidOperationException("Invalid connection: inputNode not found");
 
-        var outputPort = outputNode.GetOutputPort(connection.OutputPortId);
-        if (outputPort is null) throw new InvalidOperationException("Invalid connection: outputPort is null");
+        var OutputPin = outputNode.GetOutputPin(connection.OutputPinId);
+        if (OutputPin is null) throw new InvalidOperationException("Invalid connection: OutputPin is null");
 
-        var inputPort = inputNode.GetInputPort(connection.InputPortId);
-        WorkflowNodePort? previousConnectedInputPort;
-        switch (inputPort)
+        var InputPin = inputNode.GetInputPin(connection.InputPinId);
+        WorkflowNodePin? previousConnectedInputPin;
+        switch (InputPin)
         {
-            case WorkflowNodeControlInputPort controlInputPort when outputPort is WorkflowNodeControlOutputPort controlOutputPort:
+            case WorkflowNodeControlInputPin ControlInputPin when OutputPin is WorkflowNodeControlOutputPin ControlOutputPin:
             {
-                previousConnectedInputPort = controlInputPort.Connection;
-                controlInputPort.Connection = controlOutputPort;
+                previousConnectedInputPin = ControlInputPin.Connection;
+                ControlInputPin.Connection = ControlOutputPin;
                 break;
             }
-            case WorkflowNodeDataInputPort dataInputPort when outputPort is WorkflowNodeDataOutputPort dataOutputPort:
+            case WorkflowNodeDataInputPin dataInputPin when OutputPin is WorkflowNodeDataOutputPin dataOutputPin:
             {
-                previousConnectedInputPort = dataInputPort.Connection;
-                dataInputPort.Connection = dataOutputPort;
+                previousConnectedInputPin = dataInputPin.Connection;
+                dataInputPin.Connection = dataOutputPin;
                 break;
             }
             default:
@@ -144,13 +144,13 @@ public partial class WorkflowContext : ObservableObject
 
         connections.Add(connection);
 
-        if (previousConnectedInputPort != null)
+        if (previousConnectedInputPin != null)
         {
             var previousConnection = new WorkflowNodePortConnection(
-                previousConnectedInputPort.Owner!.Id,
-                previousConnectedInputPort.Id,
+                previousConnectedInputPin.Owner!.Id,
+                previousConnectedInputPin.Id,
                 inputNode.Id,
-                inputPort.Id);
+                InputPin.Id);
             connections.Remove(previousConnection);
             return previousConnection;
         }

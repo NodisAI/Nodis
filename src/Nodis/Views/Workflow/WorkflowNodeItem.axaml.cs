@@ -11,79 +11,79 @@ namespace Nodis.Views.Workflow;
 public enum WorkflowNodeItemPortEventType
 {
     /// <summary>
-    /// Dragging the port.
+    /// Dragging the pin.
     /// </summary>
     Dragging,
     /// <summary>
-    /// Drop the port but not connected.
+    /// Drop the pin but not connected.
     /// </summary>
     Drop,
     /// <summary>
-    /// Dragging the port, and it is snapped to another port.
+    /// Dragging the pin, and it is snapped to another pin.
     /// </summary>
     Connecting,
     /// <summary>
-    /// Drop the port and connected.
+    /// Drop the pin and connected.
     /// </summary>
     Connected
 }
 
-public record WorkflowNodeItemPortEventArgs(
+public record WorkflowNodeItemPinEventArgs(
     PointerEventArgs PointerEventArgs,
     WorkflowNodeItemPortEventType Type,
-    WorkflowNodePort StartPort,
-    WorkflowNodePort? EndPort);
+    WorkflowNodePin StartPin,
+    WorkflowNodePin? EndPin);
 
-public delegate void WorkflowNodeItemPortEventHandler(WorkflowNodeItem sender, WorkflowNodeItemPortEventArgs e);
+public delegate void WorkflowNodeItemPinEventHandler(WorkflowNodeItem sender, WorkflowNodeItemPinEventArgs e);
 
-[TemplatePart(Name = ControlInputPortPanelName, Type = typeof(Panel), IsRequired = true)]
-[TemplatePart(Name = ControlOutputPortItemsControlName, Type = typeof(ItemsControl), IsRequired = true)]
-[TemplatePart(Name = DataInputPortItemsControlName, Type = typeof(ItemsControl), IsRequired = true)]
-[TemplatePart(Name = DataOutputPortItemsControlName, Type = typeof(ItemsControl), IsRequired = true)]
+[TemplatePart(Name = ControlInputPinPanelName, Type = typeof(Panel), IsRequired = true)]
+[TemplatePart(Name = ControlOutputPinItemsControlName, Type = typeof(ItemsControl), IsRequired = true)]
+[TemplatePart(Name = DataInputPinItemsControlName, Type = typeof(ItemsControl), IsRequired = true)]
+[TemplatePart(Name = DataOutputPinItemsControlName, Type = typeof(ItemsControl), IsRequired = true)]
 public class WorkflowNodeItem(WorkflowNode node) : TemplatedControl
 {
-    private const string ControlInputPortPanelName = "PART_ControlInputPortPanel";
-    private const string ControlOutputPortItemsControlName = "PART_ControlOutputPortItemsControl";
-    private const string DataInputPortItemsControlName = "PART_DataInputPortItemsControl";
-    private const string DataOutputPortItemsControlName = "PART_DataOutputPortItemsControl";
+    private const string ControlInputPinPanelName = "PART_ControlInputPinPanel";
+    private const string ControlOutputPinItemsControlName = "PART_ControlOutputPinItemsControl";
+    private const string DataInputPinItemsControlName = "PART_DataInputPinItemsControl";
+    private const string DataOutputPinItemsControlName = "PART_DataOutputPinItemsControl";
 
     public WorkflowNode Node => node;
 
-    public event WorkflowNodeItemPortEventHandler? PortEvent;
+    public event WorkflowNodeItemPinEventHandler? PortEvent;
 
 #if DEBUG
     // For XAML Previewer and unit tests
     public WorkflowNodeItem() : this(new WorkflowConstantNode()) { }
 #endif
 
-    private Panel? controlInputPortPanel;
-    private ItemsControl? controlOutputPortItemsControl, dataInputPortItemsControl, dataOutputPortItemsControl;
+    private Panel? controlInputPinPanel;
+    private ItemsControl? controlOutputPinItemsControl, dataInputPinItemsControl, dataOutputPinItemsControl;
 
-    public Point GetPortRelativePoint(WorkflowNodePort port)
+    public Point GetPortRelativePoint(WorkflowNodePin pin)
     {
-        switch (port)
+        switch (pin)
         {
-            case WorkflowNodeControlInputPort:
+            case WorkflowNodeControlInputPin:
             {
-                var container = controlInputPortPanel;
+                var container = controlInputPinPanel;
                 if (container == null) return default;
                 return container.TranslatePoint(new Point(15, 10), this) ?? default;
             }
-            case WorkflowNodeControlOutputPort:
+            case WorkflowNodeControlOutputPin:
             {
-                var container = controlOutputPortItemsControl?.ContainerFromItem(port);
+                var container = controlOutputPinItemsControl?.ContainerFromItem(pin);
                 if (container == null) return default;
                 return container.TranslatePoint(new Point(container.Bounds.Width - 15, 10), this) ?? default;
             }
-            case WorkflowNodeDataInputPort:
+            case WorkflowNodeDataInputPin:
             {
-                var container = dataInputPortItemsControl?.ContainerFromItem(port);
+                var container = dataInputPinItemsControl?.ContainerFromItem(pin);
                 if (container == null) return default;
                 return container.TranslatePoint(new Point(15, 10), this) ?? default;
             }
-            case WorkflowNodeDataOutputPort:
+            case WorkflowNodeDataOutputPin:
             {
-                var container = dataOutputPortItemsControl?.ContainerFromItem(port);
+                var container = dataOutputPinItemsControl?.ContainerFromItem(pin);
                 if (container == null) return default;
                 return container.TranslatePoint(new Point(container.Bounds.Width - 15, 10), this) ?? default;
             }
@@ -98,26 +98,26 @@ public class WorkflowNodeItem(WorkflowNode node) : TemplatedControl
     {
         base.OnApplyTemplate(e);
 
-        controlInputPortPanel = e.NameScope.Find<Panel>(ControlInputPortPanelName);
-        controlOutputPortItemsControl = e.NameScope.Find<ItemsControl>(ControlOutputPortItemsControlName);
-        dataInputPortItemsControl = e.NameScope.Find<ItemsControl>(DataInputPortItemsControlName);
-        dataOutputPortItemsControl = e.NameScope.Find<ItemsControl>(DataOutputPortItemsControlName);
+        controlInputPinPanel = e.NameScope.Find<Panel>(ControlInputPinPanelName);
+        controlOutputPinItemsControl = e.NameScope.Find<ItemsControl>(ControlOutputPinItemsControlName);
+        dataInputPinItemsControl = e.NameScope.Find<ItemsControl>(DataInputPinItemsControlName);
+        dataOutputPinItemsControl = e.NameScope.Find<ItemsControl>(DataOutputPinItemsControlName);
     }
 
     #region Events
 
-    private static WorkflowNodePort? connectingPort;
-    private WorkflowNodePort? draggingPort;
+    private static WorkflowNodePin? connectingPort;
+    private WorkflowNodePin? draggingPort;
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         if (Node.Owner?.State == WorkflowNodeStates.Running) return;
 
-        if (e.Source is Panel { Name: "PART_ControlOutputPort" or "PART_DataOutputPort", DataContext: WorkflowNodePort port })
+        if (e.Source is Panel { Name: "PART_ControlOutputPin" or "PART_DataOutputPin", DataContext: WorkflowNodePin port })
         {
             draggingPort = port;
             e.Handled = true;
-            PortEvent?.Invoke(this, new WorkflowNodeItemPortEventArgs(e, WorkflowNodeItemPortEventType.Dragging, port, null));
+            PortEvent?.Invoke(this, new WorkflowNodeItemPinEventArgs(e, WorkflowNodeItemPortEventType.Dragging, port, null));
         }
         else if (e.Source is not Border { Name: "PART_DraggableRoot" })
         {
@@ -133,7 +133,7 @@ public class WorkflowNodeItem(WorkflowNode node) : TemplatedControl
         {
             if (Node.Owner?.State == WorkflowNodeStates.Running)
             {
-                PortEvent?.Invoke(this, new WorkflowNodeItemPortEventArgs(e, WorkflowNodeItemPortEventType.Drop, draggingPort, null));
+                PortEvent?.Invoke(this, new WorkflowNodeItemPinEventArgs(e, WorkflowNodeItemPortEventType.Drop, draggingPort, null));
                 return;
             }
 
@@ -144,7 +144,7 @@ public class WorkflowNodeItem(WorkflowNode node) : TemplatedControl
             var mouseOverItem = parent.GetVisualsAt(e.GetPosition(parent)).FirstOrDefault().FindParent<WorkflowNodeItem, Canvas>();
             if (mouseOverItem == null || mouseOverItem == this)
             {
-                PortEvent?.Invoke(this, new WorkflowNodeItemPortEventArgs(e, WorkflowNodeItemPortEventType.Dragging, draggingPort, null));
+                PortEvent?.Invoke(this, new WorkflowNodeItemPinEventArgs(e, WorkflowNodeItemPortEventType.Dragging, draggingPort, null));
                 return;
             }
 
@@ -152,13 +152,13 @@ public class WorkflowNodeItem(WorkflowNode node) : TemplatedControl
             var relativePoint = e.GetPosition(mouseOverItem);
             switch (draggingPort)
             {
-                case WorkflowNodeControlOutputPort when mouseOverItem is { Node.ControlInput: { } controlInputPort }:
+                case WorkflowNodeControlOutputPin when mouseOverItem is { Node.ControlInput: { } controlInputPin }:
                 {
-                    var distance = (mouseOverItem.GetPortRelativePoint(controlInputPort) - relativePoint).LengthSquared();
-                    if (distance < nearestDistance) connectingPort = controlInputPort;
+                    var distance = (mouseOverItem.GetPortRelativePoint(controlInputPin) - relativePoint).LengthSquared();
+                    if (distance < nearestDistance) connectingPort = controlInputPin;
                     break;
                 }
-                case WorkflowNodeDataOutputPort:
+                case WorkflowNodeDataOutputPin:
                 {
                     foreach (var port in mouseOverItem.Node.DataInputs)
                     {
@@ -177,13 +177,13 @@ public class WorkflowNodeItem(WorkflowNode node) : TemplatedControl
             {
                 PortEvent?.Invoke(
                     this,
-                    new WorkflowNodeItemPortEventArgs(e, WorkflowNodeItemPortEventType.Dragging, draggingPort, null));
+                    new WorkflowNodeItemPinEventArgs(e, WorkflowNodeItemPortEventType.Dragging, draggingPort, null));
             }
             else
             {
                 PortEvent?.Invoke(
                     this,
-                    new WorkflowNodeItemPortEventArgs(e, WorkflowNodeItemPortEventType.Connecting, draggingPort, connectingPort));
+                    new WorkflowNodeItemPinEventArgs(e, WorkflowNodeItemPortEventType.Connecting, draggingPort, connectingPort));
             }
         }
 
@@ -196,20 +196,20 @@ public class WorkflowNodeItem(WorkflowNode node) : TemplatedControl
         {
             if (Node.Owner?.State == WorkflowNodeStates.Running)
             {
-                PortEvent?.Invoke(this, new WorkflowNodeItemPortEventArgs(e, WorkflowNodeItemPortEventType.Drop, draggingPort, null));
+                PortEvent?.Invoke(this, new WorkflowNodeItemPinEventArgs(e, WorkflowNodeItemPortEventType.Drop, draggingPort, null));
                 return;
             }
 
             e.Handled = true;
             if (connectingPort == null)
             {
-                PortEvent?.Invoke(this, new WorkflowNodeItemPortEventArgs(e, WorkflowNodeItemPortEventType.Drop, draggingPort, null));
+                PortEvent?.Invoke(this, new WorkflowNodeItemPinEventArgs(e, WorkflowNodeItemPortEventType.Drop, draggingPort, null));
             }
             else
             {
                 PortEvent?.Invoke(
                     this,
-                    new WorkflowNodeItemPortEventArgs(e, WorkflowNodeItemPortEventType.Connected, draggingPort, connectingPort));
+                    new WorkflowNodeItemPinEventArgs(e, WorkflowNodeItemPortEventType.Connected, draggingPort, connectingPort));
                 connectingPort = null;
             }
             draggingPort = null;

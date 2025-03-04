@@ -13,16 +13,16 @@ public partial class WorkflowConditionNode : WorkflowNode
 
     public WorkflowConditionNode()
     {
-        ControlInput = new WorkflowNodeControlInputPort();
-        ControlOutputs.Add(new WorkflowNodeControlOutputPort("True"));
-        ControlOutputs.Add(new WorkflowNodeControlOutputPort("False"));
-        DataInputs.Add(new WorkflowNodeDataInputPort("x", new WorkflowNodeMutableData(), true).HandlePropertyChanged(HandleConditionPropertyChanged));
-        DataInputs.Add(new WorkflowNodeDataInputPort("y", new WorkflowNodeMutableData(), true).HandlePropertyChanged(HandleConditionPropertyChanged));
+        ControlInput = new WorkflowNodeControlInputPin();
+        ControlOutputs.Add(new WorkflowNodeControlOutputPin("True"));
+        ControlOutputs.Add(new WorkflowNodeControlOutputPin("False"));
+        DataInputs.Add(new WorkflowNodeDataInputPin("x", new WorkflowNodeMutableData(), true).HandlePropertyChanged(HandleConditionPropertyChanged));
+        DataInputs.Add(new WorkflowNodeDataInputPin("y", new WorkflowNodeMutableData(), true).HandlePropertyChanged(HandleConditionPropertyChanged));
     }
 
-    private void HandleConditionPropertyChanged(WorkflowNodeDataInputPort sender, PropertyChangedEventArgs e)
+    private void HandleConditionPropertyChanged(WorkflowNodeDataInputPin sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(WorkflowNodeDataInputPort.Connection)) return;
+        if (e.PropertyName != nameof(WorkflowNodeDataInputPin.Connection)) return;
 
         var (portX, portY) = (DataInputs[0], DataInputs[1]);
         WorkflowNodeDataType dataTypeX, dataTypeY;

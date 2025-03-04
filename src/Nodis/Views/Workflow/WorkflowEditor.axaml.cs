@@ -225,7 +225,7 @@ public partial class WorkflowEditor : UserControl
         workflowNodeItemPointerPressedPoint = null;
     }
 
-    private void HandleWorkflowNodeItemPortEvent(WorkflowNodeItem sender, WorkflowNodeItemPortEventArgs e)
+    private void HandleWorkflowNodeItemPortEvent(WorkflowNodeItem sender, WorkflowNodeItemPinEventArgs e)
     {
         if (WorkflowContext == null || WorkflowContext.State == WorkflowNodeStates.Running)
         {
@@ -237,11 +237,11 @@ public partial class WorkflowEditor : UserControl
         {
             case WorkflowNodeItemPortEventType.Dragging:
             {
-                var startPoint = sender.TranslatePoint(sender.GetPortRelativePoint(e.StartPort), TransformRoot) ?? default;
+                var startPoint = sender.TranslatePoint(sender.GetPortRelativePoint(e.StartPin), TransformRoot) ?? default;
                 var endPoint = e.PointerEventArgs.GetPosition(TransformRoot);
-                PreviewConnectionPath.StrokeThickness = e.StartPort.StrokeThickness;
+                PreviewConnectionPath.StrokeThickness = e.StartPin.StrokeThickness;
                 PreviewConnectionPath.IsVisible = true;
-                UpdatePreviewConnectionPath(e.StartPort.Color, e.StartPort.Color, startPoint, endPoint);
+                UpdatePreviewConnectionPath(e.StartPin.Color, e.StartPin.Color, startPoint, endPoint);
                 break;
             }
             case WorkflowNodeItemPortEventType.Drop:
@@ -251,17 +251,17 @@ public partial class WorkflowEditor : UserControl
             }
             case WorkflowNodeItemPortEventType.Connecting:
             {
-                var startPoint = sender.TranslatePoint(sender.GetPortRelativePoint(e.StartPort), TransformRoot) ?? default;
-                var targetNode = nodeMap[e.EndPort!.Owner!].Item;
-                var endPoint = targetNode.TranslatePoint(targetNode.GetPortRelativePoint(e.EndPort!), TransformRoot) ?? default;
+                var startPoint = sender.TranslatePoint(sender.GetPortRelativePoint(e.StartPin), TransformRoot) ?? default;
+                var targetNode = nodeMap[e.EndPin!.Owner!].Item;
+                var endPoint = targetNode.TranslatePoint(targetNode.GetPortRelativePoint(e.EndPin!), TransformRoot) ?? default;
                 PreviewConnectionPath.IsVisible = true;
-                UpdatePreviewConnectionPath(e.StartPort.Color, e.EndPort!.Color, startPoint, endPoint);
+                UpdatePreviewConnectionPath(e.StartPin.Color, e.EndPin!.Color, startPoint, endPoint);
                 break;
             }
             case WorkflowNodeItemPortEventType.Connected:
             {
                 PreviewConnectionPath.IsVisible = false;
-                var connection = new WorkflowNodePortConnection(e.StartPort.Owner!.Id, e.StartPort.Id, e.EndPort!.Owner!.Id, e.EndPort.Id);
+                var connection = new WorkflowNodePortConnection(e.StartPin.Owner!.Id, e.StartPin.Id, e.EndPin!.Owner!.Id, e.EndPin.Id);
                 if (WorkflowContext.AddConnection(connection) is { } previousConnection) HandleConnectionRemoved(previousConnection);
                 HandleConnectionAdded(connection);
                 break;
@@ -295,9 +295,9 @@ public partial class WorkflowEditor : UserControl
 
         public WorkflowNode InputNode { get; }
 
-        public WorkflowNodePort OutputPort { get; }
+        public WorkflowNodePin OutputPin { get; }
 
-        public WorkflowNodePort InputPort { get; }
+        public WorkflowNodePin InputPin { get; }
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(Point1))]
@@ -318,12 +318,12 @@ public partial class WorkflowEditor : UserControl
         public WorkflowNodePortConnectionItem(WorkflowEditor editor, WorkflowNodePortConnection connection)
         {
             (OutputNode, (outputItem, _)) = editor.nodeMap.First(n => n.Key.Id == connection.OutputNodeId);
-            OutputPort = OutputNode.GetOutputPort(connection.OutputPortId) ??
-                throw new InvalidOperationException($"Start port not found: {connection.OutputPortId}");
+            OutputPin = OutputNode.GetOutputPin(connection.OutputPinId) ??
+                throw new InvalidOperationException($"Start pin not found: {connection.OutputPinId}");
 
             (InputNode, (inputItem, _)) = editor.nodeMap.First(n => n.Key.Id == connection.InputNodeId);
-            InputPort = InputNode.GetInputPort(connection.InputPortId) ??
-                throw new InvalidOperationException($"End port not found: {connection.InputPortId}");
+            InputPin = InputNode.GetInputPin(connection.InputPinId) ??
+                throw new InvalidOperationException($"End pin not found: {connection.InputPinId}");
 
             CalculateStartPoint();
             CalculateEndPoint();
@@ -343,11 +343,11 @@ public partial class WorkflowEditor : UserControl
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CalculateStartPoint() =>
-            StartPoint = outputItem.GetPortRelativePoint(OutputPort) + new Point(OutputNode.X, OutputNode.Y);
+            StartPoint = outputItem.GetPortRelativePoint(OutputPin) + new Point(OutputNode.X, OutputNode.Y);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CalculateEndPoint() =>
-            EndPoint = inputItem.GetPortRelativePoint(InputPort) + new Point(InputNode.X, InputNode.Y);
+            EndPoint = inputItem.GetPortRelativePoint(InputPin) + new Point(InputNode.X, InputNode.Y);
     }
 
     private void HandleConnectionAdded(WorkflowNodePortConnection connection)

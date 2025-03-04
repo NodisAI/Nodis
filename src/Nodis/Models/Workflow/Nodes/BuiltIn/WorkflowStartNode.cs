@@ -14,18 +14,18 @@ public sealed partial class WorkflowStartNode : WorkflowNode
 
     public WorkflowStartNode()
     {
-        ControlOutputs.Add(new ControlOutputPort());
+        ControlOutputs.Add(new ControlOutputPin());
     }
 
     public void Start()
     {
-        ControlOutputs[0].To<ControlOutputPort>().Start();
+        ControlOutputs[0].To<ControlOutputPin>().Start();
         State = WorkflowNodeStates.Completed;
     }
 
     public void Stop()
     {
-        ControlOutputs[0].To<ControlOutputPort>().Stop();
+        ControlOutputs[0].To<ControlOutputPin>().Stop();
         State = WorkflowNodeStates.NotStarted;
     }
 
@@ -35,7 +35,7 @@ public sealed partial class WorkflowStartNode : WorkflowNode
         throw new NotSupportedException();
     }
 
-    private class ControlOutputPort : WorkflowNodeControlOutputPort
+    private class ControlOutputPin : WorkflowNodeControlOutputPin
     {
         public void Start() => CanExecute = true;
         public void Stop() => CanExecute = false;

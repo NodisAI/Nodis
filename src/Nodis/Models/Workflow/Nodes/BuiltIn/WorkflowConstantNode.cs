@@ -21,7 +21,7 @@ public partial class WorkflowConstantNode : WorkflowNode
             foreach (var item in value)
             {
                 Properties.Add(new WorkflowNodeProperty(item.Name, item.Data));
-                DataOutputs.Add(new WorkflowNodeDataOutputPort(item.Name, item.Data));
+                DataOutputs.Add(new WorkflowNodeDataOutputPin(item.Name, item.Data));
             }
         }
     }
@@ -83,7 +83,7 @@ public partial class WorkflowConstantNode : WorkflowNode
         while (Properties.Any(p => p.Name == name));
         var data = WorkflowNodeData.CreateDefault(dataType);
         Properties.Add(new WorkflowNodeProperty(name, data));
-        DataOutputs.Add(new WorkflowNodeDataOutputPort(name, data));
+        DataOutputs.Add(new WorkflowNodeDataOutputPin(name, data));
         OnPropertyChanged(nameof(ContextMenuItems));
     }
 

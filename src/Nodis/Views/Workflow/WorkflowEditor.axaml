@@ -53,11 +53,11 @@
 
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vwf:WorkflowEditor+WorkflowNodePortConnectionItem">
-                        <Path StrokeJoin="Round" StrokeThickness="{Binding OutputPort.StrokeThickness}">
+                        <Path StrokeLineCap="Round" StrokeThickness="{Binding OutputPin.StrokeThickness}">
                             <Path.Stroke>
                                 <LinearGradientBrush>
-                                    <GradientStop Offset="0" Color="{Binding OutputPort.Color}"/>
-                                    <GradientStop Offset="1" Color="{Binding InputPort.Color}"/>
+                                    <GradientStop Offset="0" Color="{Binding OutputPin.Color}"/>
+                                    <GradientStop Offset="1" Color="{Binding InputPin.Color}"/>
                                 </LinearGradientBrush>
                             </Path.Stroke>
                             <Path.Data>
@@ -76,7 +76,7 @@
             </ItemsControl>
             <Path
                 x:Name="PreviewConnectionPath" IsHitTestVisible="False"
-                StrokeJoin="Round">
+                StrokeLineCap="Round">
                 <Path.Stroke>
                     <LinearGradientBrush>
                         <GradientStop Offset="0"/>

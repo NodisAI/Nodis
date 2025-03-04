@@ -9,7 +9,8 @@
     <Style Selector="vwf|WorkflowNodeItem">
         <Style.Resources>
             <vc:WorkflowNodeStatusToColorConverter x:Key="StatusToColorConverter"/>
-            <Geometry x:Key="ControlPortGeometry">M3.86 4h9.77a3 3 90 012 .78l.1.11 6 7.48a1 1 90 01-.11 1.37l-6 5.48a3 3 90 01-2 .78h-9.77A1.84 1.84 90 012 18.18V5.82A1.84 1.84 90 013.86 4z</Geometry>
+            <vc:WorkflowNodePinColorConverter x:Key="WorkflowNodePinColorConverter"/>
+            <Geometry x:Key="ControlPortGeometry">m1.2 0h6a2.2 1.8 90 011.2.7l0 0 3.6 4.3a1 1 90 010 1l-3.6 4.3a2.2 1.8 90 01-1.2.7h-6a1.5 1.2 90 01-1.2-1.5v-8a1.5 1.2 90 011.2-1.5z</Geometry>
         </Style.Resources>
 
         <Setter Property="Template">
@@ -93,37 +94,64 @@
                         <UniformGrid
                             Grid.Row="2" Columns="2"
                             Rows="1">
-                            <StackPanel IsHitTestVisible="False" Orientation="Vertical">
+                            <StackPanel Orientation="Vertical">
                                 <Panel
-                                    x:Name="PART_ControlInputPortPanel" Height="20"
+                                    x:Name="PART_ControlInputPinPanel" Height="20"
                                     IsVisible="{Binding Node.ControlInput, Converter={x:Static ObjectConverters.IsNotNull}, RelativeSource={RelativeSource TemplatedParent}}">
-                                    <PathIcon
-                                        Width="10" Height="10"
+                                    <Path
+                                        Width="11" Height="11"
                                         Margin="11,0,0,0" HorizontalAlignment="Left"
                                         VerticalAlignment="Center"
-                                        Data="{StaticResource ControlPortGeometry}">
-                                        <PathIcon.Foreground>
+                                        Data="{StaticResource ControlPortGeometry}"
+                                        StrokeThickness="1">
+                                        <Path.Stroke>
                                             <SolidColorBrush Color="{Binding Node.ControlInput.Color, FallbackValue={x:Null}, RelativeSource={RelativeSource TemplatedParent}}"/>
-                                        </PathIcon.Foreground>
-                                    </PathIcon>
+                                        </Path.Stroke>
+                                        <Path.Fill>
+                                            <SolidColorBrush>
+                                                <SolidColorBrush.Color>
+                                                    <MultiBinding Converter="{StaticResource WorkflowNodePinColorConverter}">
+                                                        <Binding
+                                                            FallbackValue="false" Path="Node.ControlInput.IsConnected"
+                                                            RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                        <Binding
+                                                            FallbackValue="{x:Null}"
+                                                            Path="Node.ControlInput.Color"
+                                                            RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                    </MultiBinding>
+                                                </SolidColorBrush.Color>
+                                            </SolidColorBrush>
+                                        </Path.Fill>
+                                    </Path>
                                     <TextBlock
                                         Margin="25,0,0,0" VerticalAlignment="Center"
                                         Text="{Binding Node.ControlInput.Name, FallbackValue={x:Null}, RelativeSource={RelativeSource TemplatedParent}}"/>
                                 </Panel>
 
-                                <ItemsControl x:Name="PART_DataInputPortItemsControl" ItemsSource="{Binding Node.DataInputs.Bindable, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ItemsControl x:Name="PART_DataInputPinItemsControl" ItemsSource="{Binding Node.DataInputs.Bindable, RelativeSource={RelativeSource TemplatedParent}}">
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="mwf:WorkflowNodeDataInputPort">
-                                            <Panel x:Name="PART_DataInputPort">
+                                        <DataTemplate DataType="mwf:WorkflowNodeDataInputPin">
+                                            <Panel x:Name="PART_DataInputPin">
                                                 <Panel
                                                     Height="20" HorizontalAlignment="Left"
                                                     VerticalAlignment="Top">
                                                     <Border
-                                                        Width="10" Height="10"
-                                                        Margin="11,0,0,0" HorizontalAlignment="Left"
-                                                        VerticalAlignment="Center" CornerRadius="5">
-                                                        <Border.Background>
+                                                        Width="11" Height="11"
+                                                        Margin="10,0,0,0" HorizontalAlignment="Left"
+                                                        VerticalAlignment="Center" BorderThickness="1"
+                                                        CornerRadius="6">
+                                                        <Border.BorderBrush>
                                                             <SolidColorBrush Color="{Binding Color}"/>
+                                                        </Border.BorderBrush>
+                                                        <Border.Background>
+                                                            <SolidColorBrush>
+                                                                <SolidColorBrush.Color>
+                                                                    <MultiBinding Converter="{StaticResource WorkflowNodePinColorConverter}">
+                                                                        <Binding Path="IsConnected"/>
+                                                                        <Binding Path="Color"/>
+                                                                    </MultiBinding>
+                                                                </SolidColorBrush.Color>
+                                                            </SolidColorBrush>
                                                         </Border.Background>
                                                     </Border>
                                                     <TextBlock
@@ -131,7 +159,7 @@
                                                         Text="{Binding Name}"/>
                                                 </Panel>
 
-                                                <vwf:WorkflowNodeDataInput Margin="25,24,0,0" Data="{Binding Data}">
+                                                <vwf:WorkflowNodeDataInput Margin="25,25,0,0" Data="{Binding Data}">
                                                     <vwf:WorkflowNodeDataInput.IsVisible>
                                                         <MultiBinding Converter="{x:Static BoolConverters.And}">
                                                             <Binding Converter="{x:Static ObjectConverters.IsNull}" Path="Connection"/>
@@ -146,48 +174,68 @@
                             </StackPanel>
 
                             <StackPanel Orientation="Vertical">
-                                <ItemsControl x:Name="PART_ControlOutputPortItemsControl" ItemsSource="{Binding Node.ControlOutputs.Bindable, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ItemsControl x:Name="PART_ControlOutputPinItemsControl" ItemsSource="{Binding Node.ControlOutputs.Bindable, RelativeSource={RelativeSource TemplatedParent}}">
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="mwf:WorkflowNodeControlOutputPort">
+                                        <DataTemplate DataType="mwf:WorkflowNodeControlOutputPin">
                                             <Panel
-                                                x:Name="PART_ControlOutputPort" Height="20"
+                                                x:Name="PART_ControlOutputPin" Height="20"
                                                 Background="Transparent">
                                                 <TextBlock
                                                     Margin="0,0,25,0" HorizontalAlignment="Right"
                                                     VerticalAlignment="Center" IsHitTestVisible="False"
                                                     Text="{Binding Name}"/>
-                                                <PathIcon
-                                                    Width="10" Height="10"
-                                                    Margin="0,0,11,0" HorizontalAlignment="Right"
+                                                <Path
+                                                    Width="11" Height="11"
+                                                    Margin="0,0,9,0" HorizontalAlignment="Right"
                                                     VerticalAlignment="Center"
                                                     Data="{StaticResource ControlPortGeometry}"
-                                                    IsHitTestVisible="False">
-                                                    <PathIcon.Foreground>
+                                                    IsHitTestVisible="False" StrokeThickness="1">
+                                                    <Path.Stroke>
                                                         <SolidColorBrush Color="{Binding Color}"/>
-                                                    </PathIcon.Foreground>
-                                                </PathIcon>
+                                                    </Path.Stroke>
+                                                    <Path.Fill>
+                                                        <SolidColorBrush>
+                                                            <SolidColorBrush.Color>
+                                                                <MultiBinding Converter="{StaticResource WorkflowNodePinColorConverter}">
+                                                                    <Binding Path="IsConnected"/>
+                                                                    <Binding Path="Color"/>
+                                                                </MultiBinding>
+                                                            </SolidColorBrush.Color>
+                                                        </SolidColorBrush>
+                                                    </Path.Fill>
+                                                </Path>
                                             </Panel>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
 
-                                <ItemsControl x:Name="PART_DataOutputPortItemsControl" ItemsSource="{Binding Node.DataOutputs.Bindable, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ItemsControl x:Name="PART_DataOutputPinItemsControl" ItemsSource="{Binding Node.DataOutputs.Bindable, RelativeSource={RelativeSource TemplatedParent}}">
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="mwf:WorkflowNodeDataOutputPort">
+                                        <DataTemplate DataType="mwf:WorkflowNodeDataOutputPin">
                                             <Panel
-                                                x:Name="PART_DataOutputPort" Height="20"
+                                                x:Name="PART_DataOutputPin" Height="20"
                                                 Background="Transparent">
                                                 <TextBlock
                                                     Margin="0,0,25,0" HorizontalAlignment="Right"
                                                     VerticalAlignment="Center" IsHitTestVisible="False"
                                                     Text="{Binding Name}"/>
                                                 <Border
-                                                    Width="10" Height="10"
-                                                    Margin="0,0,11,0" HorizontalAlignment="Right"
-                                                    VerticalAlignment="Center" CornerRadius="5"
-                                                    IsHitTestVisible="False">
-                                                    <Border.Background>
+                                                    Width="11" Height="11"
+                                                    Margin="0,0,10,0" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center" BorderThickness="1"
+                                                    CornerRadius="6" IsHitTestVisible="False">
+                                                    <Border.BorderBrush>
                                                         <SolidColorBrush Color="{Binding Color}"/>
+                                                    </Border.BorderBrush>
+                                                    <Border.Background>
+                                                        <SolidColorBrush>
+                                                            <SolidColorBrush.Color>
+                                                                <MultiBinding Converter="{StaticResource WorkflowNodePinColorConverter}">
+                                                                    <Binding Path="IsConnected"/>
+                                                                    <Binding Path="Color"/>
+                                                                </MultiBinding>
+                                                            </SolidColorBrush.Color>
+                                                        </SolidColorBrush>
                                                     </Border.Background>
                                                 </Border>
                                             </Panel>
