@@ -10,9 +10,8 @@ namespace Nodis.Services;
 
 public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmentManager
 {
-    private static string DataFolderPath { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), nameof(Nodis));
-    private static string SourcesFolderPath => Path.Combine(DataFolderPath, "Sources");
-    private static string NodesFolderPath => Path.Combine(DataFolderPath, "Nodes");
+    private static string SourcesFolderPath => Path.Combine(IEnvironmentManager.DataFolderPath, "Sources");
+    private static string NodesFolderPath => Path.Combine(IEnvironmentManager.DataFolderPath, "Nodes");
 
     public IEnumerable<Metadata> EnumerateSources()
     {
@@ -130,7 +129,7 @@ public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmen
 
     private async Task ExecuteInstallOperationAsync(
         string installationFolderPath,
-        INodeInstallOperation operation,
+        NodeInstallOperation operation,
         CancellationToken cancellationToken)
     {
         switch (operation)

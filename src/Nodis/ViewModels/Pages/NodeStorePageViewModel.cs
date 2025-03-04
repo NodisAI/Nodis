@@ -31,6 +31,7 @@ public partial class NodeStorePageViewModel(IEnvironmentManager environmentManag
 
     private async IAsyncEnumerable<NodeWrapper> LoadSourcesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        await environmentManager.UpdateSourcesAsync(cancellationToken);
         foreach (var group in environmentManager.EnumerateSources().GroupBy(m => $"{m.Namespace}:{m.Name}"))
         {
             var items = group.ToList();
@@ -44,7 +45,7 @@ public partial class NodeStorePageViewModel(IEnvironmentManager environmentManag
 
     protected internal override async Task ViewLoaded(CancellationToken cancellationToken)
     {
-        await foreach (var node in LoadSourcesAsync(cancellationToken)) Nodes.Add(node);
+        await foreach (var node in LoadSourcesAsync(cancellationToken)) nodes.Add(node);
         await base.ViewLoaded(cancellationToken);
     }
 

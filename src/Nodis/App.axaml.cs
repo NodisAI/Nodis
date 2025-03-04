@@ -1,3 +1,5 @@
+using AsyncImageLoader;
+using AsyncImageLoader.Loaders;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
@@ -52,6 +54,8 @@ public class App : Application, IKeyedServiceProvider
             .AddSingleton<MainWindow>();
 
         serviceProvider = ServiceCollection.BuildServiceProvider();
+
+        ImageLoader.AsyncImageLoader = new DiskCachedWebImageLoader(Path.Combine(IEnvironmentManager.DataFolderPath, "Cache/Images/"));
 
         this.EnableHotReload();
         AvaloniaXamlLoader.Load(this);

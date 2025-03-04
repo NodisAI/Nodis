@@ -24,8 +24,8 @@ public partial class NodeMetadata
     public required IReadOnlyList<NodeRuntime> Runtimes { get; set; }
 
     [YamlMember("pre_install")]
-    public IReadOnlyList<INodeInstallOperation> PreInstall { get; set; } = [];
+    public IReadOnlyList<NodeInstallOperation> PreInstall { get; set; } = [];
 
     [YamlMember("post_install")]
-    public IReadOnlyList<INodeInstallOperation> PostInstall { get; set; } = [];
+    public IReadOnlyList<NodeInstallOperation> PostInstall { get; set; } = [];
 }

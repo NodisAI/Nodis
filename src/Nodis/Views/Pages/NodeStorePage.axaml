@@ -11,7 +11,8 @@
     <Grid ColumnDefinitions="1*,3*" RowDefinitions="Auto,*">
         <TextBox
             Grid.Row="0" Grid.Column="0"
-            Grid.ColumnSpan="2" suki:TextBoxExtensions.AddDeleteButton="True"
+            Grid.ColumnSpan="2" MinHeight="32"
+            Margin="5" suki:TextBoxExtensions.AddDeleteButton="True"
             Watermark="Search Nodes"/>
 
         <suki:GlassCard

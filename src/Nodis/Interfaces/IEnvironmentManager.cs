@@ -4,6 +4,8 @@ namespace Nodis.Interfaces;
 
 public interface IEnvironmentManager
 {
+    public static string DataFolderPath { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), nameof(Nodis));
+
     IEnumerable<Metadata> EnumerateSources();
 
     IEnumerable<Metadata> EnumerateNodes();

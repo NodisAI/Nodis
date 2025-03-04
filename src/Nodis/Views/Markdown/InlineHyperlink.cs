@@ -27,8 +27,7 @@ public class InlineHyperlink : InlineUIContainer
 
         if (href is not null)
         {
-            var url = new Uri(href);
-            button.Click += (_, _) => OpenUrl(url);
+            button.Click += (_, _) => OpenUrl(new Uri(href, UriKind.RelativeOrAbsolute));
             ToolTip.SetTip(button, href);
         }
 
