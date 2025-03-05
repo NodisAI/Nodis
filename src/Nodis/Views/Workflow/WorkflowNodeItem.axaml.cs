@@ -119,7 +119,7 @@ public class WorkflowNodeItem(WorkflowNode node) : TemplatedControl
             e.Handled = true;
             PortEvent?.Invoke(this, new WorkflowNodeItemPinEventArgs(e, WorkflowNodeItemPortEventType.Dragging, port, null));
         }
-        else if (e.Source is not Border { Name: "PART_DraggableRoot" })
+        else if (e.Source is not Border { Name: "PART_DraggableRoot" or "PART_StatusIndicator" })
         {
             e.Handled = true;
         }

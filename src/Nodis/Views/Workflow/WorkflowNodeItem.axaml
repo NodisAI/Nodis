@@ -33,7 +33,17 @@
                                 Width="16" Height="16"
                                 Margin="8"
                                 Background="{Binding Node.State, Converter={StaticResource StatusToColorConverter}, RelativeSource={RelativeSource TemplatedParent}}"
-                                CornerRadius="8" IsHitTestVisible="False"/>
+                                CornerRadius="8" ToolTip.Placement="Top">
+                                <ToolTip.Tip>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock>
+                                            <Run Text="Node is"/>
+                                            <Run Text="{Binding Node.State, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        </TextBlock>
+                                        <TextBlock IsVisible="{Binding Node.ErrorMessage, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding Node.ErrorMessage, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    </StackPanel>
+                                </ToolTip.Tip>
+                            </Border>
 
                             <TextBlock
                                 Margin="4,0" VerticalAlignment="Center"

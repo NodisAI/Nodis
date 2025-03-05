@@ -44,7 +44,9 @@
         </Panel>
 
         <Panel x:Name="TransformRoot">
-            <ItemsControl x:Name="ConnectionItemsControl" IsHitTestVisible="False">
+            <ItemsControl
+                x:Name="ConnectionItemsControl" ClipToBounds="False"
+                IsHitTestVisible="False">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <Panel/>
