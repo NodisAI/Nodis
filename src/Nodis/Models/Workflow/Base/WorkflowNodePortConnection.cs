@@ -27,11 +27,11 @@ internal class WorkflowNodePortConnectionYamlFormatter : IYamlFormatter<Workflow
     {
         parser.ReadWithVerify(ParseEventType.SequenceStart);
         var outputNodeId = context.DeserializeWithAlias<int>(ref parser);
-        var OutputPinId = context.DeserializeWithAlias<int>(ref parser);
+        var outputPinId = context.DeserializeWithAlias<int>(ref parser);
         var inputNodeId = context.DeserializeWithAlias<int>(ref parser);
-        var InputPinId = context.DeserializeWithAlias<int>(ref parser);
+        var inputPinId = context.DeserializeWithAlias<int>(ref parser);
         parser.ReadWithVerify(ParseEventType.SequenceEnd);
 
-        return new WorkflowNodePortConnection(outputNodeId, OutputPinId, inputNodeId, InputPinId);
+        return new WorkflowNodePortConnection(outputNodeId, outputPinId, inputNodeId, inputPinId);
     }
 }

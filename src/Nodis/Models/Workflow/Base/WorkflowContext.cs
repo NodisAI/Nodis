@@ -117,20 +117,20 @@ public partial class WorkflowContext : ObservableObject
         if (!nodesMap.TryGetValue(connection.InputNodeId, out var inputNode))
             throw new InvalidOperationException("Invalid connection: inputNode not found");
 
-        var OutputPin = outputNode.GetOutputPin(connection.OutputPinId);
-        if (OutputPin is null) throw new InvalidOperationException("Invalid connection: OutputPin is null");
+        var outputPin = outputNode.GetOutputPin(connection.OutputPinId);
+        if (outputPin is null) throw new InvalidOperationException("Invalid connection: OutputPin is null");
 
-        var InputPin = inputNode.GetInputPin(connection.InputPinId);
+        var inputPin = inputNode.GetInputPin(connection.InputPinId);
         WorkflowNodePin? previousConnectedInputPin;
-        switch (InputPin)
+        switch (inputPin)
         {
-            case WorkflowNodeControlInputPin ControlInputPin when OutputPin is WorkflowNodeControlOutputPin ControlOutputPin:
+            case WorkflowNodeControlInputPin controlInputPin when outputPin is WorkflowNodeControlOutputPin controlOutputPin:
             {
-                previousConnectedInputPin = ControlInputPin.Connection;
-                ControlInputPin.Connection = ControlOutputPin;
+                previousConnectedInputPin = controlInputPin.Connection;
+                controlInputPin.Connection = controlOutputPin;
                 break;
             }
-            case WorkflowNodeDataInputPin dataInputPin when OutputPin is WorkflowNodeDataOutputPin dataOutputPin:
+            case WorkflowNodeDataInputPin dataInputPin when outputPin is WorkflowNodeDataOutputPin dataOutputPin:
             {
                 previousConnectedInputPin = dataInputPin.Connection;
                 dataInputPin.Connection = dataOutputPin;
@@ -150,12 +150,12 @@ public partial class WorkflowContext : ObservableObject
                 previousConnectedInputPin.Owner!.Id,
                 previousConnectedInputPin.Id,
                 inputNode.Id,
-                InputPin.Id);
+                inputPin.Id);
             connections.Remove(previousConnection);
-            return previousConnection;
+            ConnectionRemoved?.Invoke(previousConnection);
         }
 
-        return null;
+        ConnectionAdded?.Invoke(connection);
     }
 
     #region Serialization
