@@ -176,23 +176,11 @@ public partial class WorkflowContext : ObservableObject
         BuiltinResolver.KnownGenericTypes.Add(typeof(IReadOnlySet<>), typeof(InterfaceReadonlySetFormatter<>));
     }
 
-    private static YamlSerializerOptions YamlSerializerOptions => new()
-    {
-        Resolver = CompositeResolver.Create(
-            [
-                new WorkflowNodePortConnectionYamlFormatter()
-            ],
-            [
-                StandardResolver.Instance
-            ]
-        )
-    };
-
     public ReadOnlyMemory<byte> SerializeToYaml() =>
-        YamlSerializer.Serialize(this, YamlSerializerOptions);
+        YamlSerializer.Serialize(this, App.Resolve<YamlSerializerOptions>());
 
     public static WorkflowContext DeserializeFromYaml(ReadOnlyMemory<byte> yaml) =>
-        YamlSerializer.Deserialize<WorkflowContext>(yaml, YamlSerializerOptions);
+        YamlSerializer.Deserialize<WorkflowContext>(yaml, App.Resolve<YamlSerializerOptions>());
 
     #endregion
 

@@ -108,7 +108,7 @@ public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmen
             metadata.Name,
             metadata.Version + ".yaml");
         await using var fs = File.OpenRead(nodeMetadataPath);
-        return await YamlSerializer.DeserializeAsync<NodeMetadata>(fs);
+        return await YamlSerializer.DeserializeAsync<NodeMetadata>(fs, yamlSerializerOptions);
     }
 
     private async static ValueTask<string> SearchScriptAsync(string scriptName, CancellationToken cancellationToken)

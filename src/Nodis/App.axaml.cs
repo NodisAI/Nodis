@@ -28,6 +28,18 @@ public class App : Application, IKeyedServiceProvider
 
         ServiceCollection
             .AddSingleton<HttpClient>()
+            .AddSingleton<YamlSerializerOptions>(_ => new YamlSerializerOptions
+            {
+                Resolver = CompositeResolver.Create(
+                    [
+                        new WorkflowNodePortConnectionYamlFormatter(),
+                        new NameAndVersionConstraintsYamlFormatter()
+                    ],
+                    [
+                        StandardResolver.Instance
+                    ]
+                )
+            })
             .AddSingleton<INativeInterop>(
                 _ => new MinGwNativeInterop()
             )
