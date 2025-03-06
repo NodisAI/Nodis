@@ -59,7 +59,7 @@ public partial class NodeStorePageViewModel(IEnvironmentManager environmentManag
         string title,
         Metadata metadata,
         NodeMetadata nodeMetadata,
-        List<Version> versions) : ObservableObject
+        List<SemanticVersion> versions) : ObservableObject
     {
         public string Title { get; } = title;
 
@@ -67,10 +67,10 @@ public partial class NodeStorePageViewModel(IEnvironmentManager environmentManag
 
         public NodeMetadata NodeMetadata { get; } = nodeMetadata;
 
-        public List<Version> Versions { get; } = versions;
+        public List<SemanticVersion> Versions { get; } = versions;
 
         [ObservableProperty]
-        public partial Version SelectedVersion { get; set; } = versions[0];
+        public partial SemanticVersion SelectedVersion { get; set; } = versions[0];
 
         public AsyncProperty<string?> ReadmeMarkdown { get; } = new(
             async () =>
