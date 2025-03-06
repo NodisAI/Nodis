@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using System.Data;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SukiUI.ColorTheme;
@@ -115,7 +114,7 @@ public partial class WorkflowNodeDataOutputPin : WorkflowNodeDataPin
 
     private readonly HashSet<WorkflowNodeDataInputPin> connections = [];
 
-    public WorkflowNodeDataOutputPin(string name, WorkflowNodeData data) : base(name, data)
+    public WorkflowNodeDataOutputPin(string name, WorkflowNodeData? data) : base(name, data ?? new WorkflowNodeMutableData())
     {
         Data.PropertyChanged += (_, e) =>
         {
@@ -170,8 +169,8 @@ public partial class WorkflowNodeDataInputPin : WorkflowNodeDataPin
         }
     }
 
-    [YamlMember("has_data")]
-    public bool HasData { get; init; }
+    [YamlIgnore]
+    public bool CanUserInput { get; }
 
     [YamlIgnore]
     public object? Value
@@ -180,21 +179,19 @@ public partial class WorkflowNodeDataInputPin : WorkflowNodeDataPin
         {
             try
             {
-                if (Connection != null) return Data.ConvertValue(Connection.Data.Value);
-                if (HasData) return Data.Value;
+                return Connection != null ? Data.ConvertValue(Connection.Data.Value) : Data.Value;
             }
             catch (Exception e)
             {
                 throw new WorkflowNodePortException(this, e);
             }
-
-            throw new WorkflowNodePortException(this, new DataException("No data available."));
         }
     }
 
     [YamlConstructor]
-    public WorkflowNodeDataInputPin(string name, WorkflowNodeData data) : base(name, data)
+    public WorkflowNodeDataInputPin(string name, WorkflowNodeData? data) : base(name, data ?? new WorkflowNodeMutableData())
     {
+        CanUserInput = data != null;
         Data.PropertyChanged += (_, e) =>
         {
             switch (e.PropertyName)
@@ -207,11 +204,6 @@ public partial class WorkflowNodeDataInputPin : WorkflowNodeDataPin
                     break;
             }
         };
-    }
-
-    public WorkflowNodeDataInputPin(string name, WorkflowNodeData data, bool hasData) : this(name, data)
-    {
-        HasData = hasData;
     }
 
     protected virtual void HandleConnectionDataPropertyChanged(object? sender, PropertyChangedEventArgs e) =>

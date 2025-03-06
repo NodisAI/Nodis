@@ -7,11 +7,14 @@ using HotAvalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Nodis.Extensions;
 using Nodis.Interfaces;
+using Nodis.Models;
+using Nodis.Models.Workflow;
 using Nodis.Services;
 using Nodis.ViewModels;
 using Nodis.Views;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
+using VYaml.Serialization;
 
 namespace Nodis;
 
@@ -27,7 +30,10 @@ public class App : Application, IKeyedServiceProvider
         #region BasicServices
 
         ServiceCollection
-            .AddSingleton<HttpClient>()
+            .AddSingleton<HttpClient>(_ => new HttpClient
+            {
+                Timeout = TimeSpan.MaxValue
+            })
             .AddSingleton<YamlSerializerOptions>(_ => new YamlSerializerOptions
             {
                 Resolver = CompositeResolver.Create(

@@ -15,7 +15,7 @@ public partial class WorkflowRestfulNode : WorkflowUserNode
     [YamlMember("response")]
     public required WorkflowRestfulNodeResponse Response { get; init; }
 
-    public WorkflowRestfulNode(string name) : base(name)
+    public WorkflowRestfulNode(int id, string name) : base(id, name)
     {
         ControlInput = new WorkflowNodeControlInputPin();
         ControlOutputs.Add(new WorkflowNodeControlOutputPin("Success"));
@@ -31,16 +31,20 @@ public partial class WorkflowRestfulNode : WorkflowUserNode
         try
         {
             var requestMessage = new HttpRequestMessage(HttpMethod.Parse(Request.Method), Request.Url);
+
+            if (Request.Body is not null)
+            {
+                requestMessage.Content = new StringContent(ExpandVariables(Request.Body));
+            }
+
             if (Request.Headers is not null)
             {
                 foreach (var (key, value) in Request.Headers)
                 {
-                    requestMessage.Headers.Add(ExpandVariables(key), ExpandVariables(value));
+                    var (actualKey, actualValue) = (ExpandVariables(key), ExpandVariables(value));
+                    requestMessage.Headers.TryAddWithoutValidation(actualKey, actualValue);
+                    requestMessage.Content?.Headers.TryAddWithoutValidation(actualKey, actualValue);
                 }
-            }
-            if (Request.Body is not null)
-            {
-                requestMessage.Content = new StringContent(ExpandVariables(Request.Body));
             }
 
             var responseMessage = await App.Resolve<HttpClient>().SendAsync(requestMessage, cancellationToken);

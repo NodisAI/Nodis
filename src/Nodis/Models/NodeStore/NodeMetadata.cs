@@ -1,4 +1,5 @@
-﻿using VYaml.Annotations;
+﻿using Nodis.Models.Workflow;
+using VYaml.Annotations;
 
 namespace Nodis.Models;
 
@@ -20,7 +21,7 @@ public partial class NodeMetadata
     [YamlMember("license")]
     public required string License { get; set; }
 
-    [YamlMember("services")]
+    [YamlMember("runtimes")]
     public required IReadOnlyList<NodeRuntime> Runtimes { get; set; }
 
     [YamlMember("pre_install")]
@@ -28,4 +29,7 @@ public partial class NodeMetadata
 
     [YamlMember("post_install")]
     public IReadOnlyList<NodeInstallOperation> PostInstall { get; set; } = [];
+
+    [YamlMember("nodes")]
+    public IReadOnlyList<WorkflowUserNode> Nodes { get; set; } = [];
 }

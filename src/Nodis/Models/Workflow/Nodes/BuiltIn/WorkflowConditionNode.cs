@@ -6,7 +6,7 @@ using VYaml.Annotations;
 namespace Nodis.Models.Workflow;
 
 [YamlObject]
-public partial class WorkflowConditionNode : WorkflowNode
+public partial class WorkflowConditionNode : WorkflowBuiltInNode
 {
     [YamlIgnore]
     public override string Name => "Condition";
@@ -16,8 +16,8 @@ public partial class WorkflowConditionNode : WorkflowNode
         ControlInput = new WorkflowNodeControlInputPin();
         ControlOutputs.Add(new WorkflowNodeControlOutputPin("True"));
         ControlOutputs.Add(new WorkflowNodeControlOutputPin("False"));
-        DataInputs.Add(new WorkflowNodeDataInputPin("x", new WorkflowNodeMutableData(), true).HandlePropertyChanged(HandleConditionPropertyChanged));
-        DataInputs.Add(new WorkflowNodeDataInputPin("y", new WorkflowNodeMutableData(), true).HandlePropertyChanged(HandleConditionPropertyChanged));
+        DataInputs.Add(new WorkflowNodeDataInputPin("x", new WorkflowNodeMutableData()).HandlePropertyChanged(HandleConditionPropertyChanged));
+        DataInputs.Add(new WorkflowNodeDataInputPin("y", new WorkflowNodeMutableData()).HandlePropertyChanged(HandleConditionPropertyChanged));
     }
 
     private void HandleConditionPropertyChanged(WorkflowNodeDataInputPin sender, PropertyChangedEventArgs e)

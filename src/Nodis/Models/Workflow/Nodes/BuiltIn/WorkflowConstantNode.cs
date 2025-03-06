@@ -6,7 +6,7 @@ using VYaml.Annotations;
 namespace Nodis.Models.Workflow;
 
 [YamlObject]
-public partial class WorkflowConstantNode : WorkflowNode
+public partial class WorkflowConstantNode : WorkflowBuiltInNode
 {
     [YamlIgnore]
     public override string Name => "Constant";

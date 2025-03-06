@@ -3,7 +3,7 @@
 namespace Nodis.Models.Workflow;
 
 [YamlObject]
-public partial class WorkflowLoopNode : WorkflowNode
+public partial class WorkflowLoopNode : WorkflowBuiltInNode
 {
     [YamlIgnore]
     public override string Name => "Loop";

@@ -1,6 +1,4 @@
-﻿using System.Collections.ObjectModel;
-
-namespace Nodis.Extensions;
+﻿namespace Nodis.Extensions;
 
 public static class EnumerableExtension
 {
@@ -252,6 +250,55 @@ public static class EnumerableExtension
         for (var i = index + count - 1; i >= index; i--)
         {
             list.RemoveAt(i);
+        }
+    }
+
+    public static async IAsyncEnumerable<TItem> SelectAsync<TSource, TItem>(this IEnumerable<TSource> source, Func<TSource, Task<TItem>> selector)
+    {
+        foreach (var item in source)
+        {
+            yield return await selector(item);
+        }
+    }
+
+    public static async IAsyncEnumerable<TItem> SelectAsync<TSource, TItem>(this IAsyncEnumerable<TSource> source, Func<TSource, TItem> selector)
+    {
+        await foreach (var item in source)
+        {
+            yield return selector(item);
+        }
+    }
+
+    public static async IAsyncEnumerable<TItem> SelectManyAsync<TSource, TItem>(this IAsyncEnumerable<TSource> source, Func<TSource, IEnumerable<TItem>> selector)
+    {
+        await foreach (var item in source)
+        {
+            foreach (var subItem in selector(item))
+            {
+                yield return subItem;
+            }
+        }
+    }
+
+    public static async IAsyncEnumerable<TItem> SelectManyAsync<TSource, TItem>(this IEnumerable<TSource> source, Func<TSource, Task<IEnumerable<TItem>>> selector)
+    {
+        foreach (var item in source)
+        {
+            foreach (var subItem in await selector(item))
+            {
+                yield return subItem;
+            }
+        }
+    }
+
+    public static async IAsyncEnumerable<TItem> SelectManyAsync<TSource, TItem>(this IAsyncEnumerable<TSource> source, Func<TSource, Task<IEnumerable<TItem>>> selector)
+    {
+        await foreach (var item in source)
+        {
+            foreach (var subItem in await selector(item))
+            {
+                yield return subItem;
+            }
         }
     }
 }

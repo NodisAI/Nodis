@@ -6,16 +6,16 @@
     xmlns:vwf="clr-namespace:Nodis.Views.Workflow" d:DesignHeight="450"
     d:DesignWidth="800" ClipToBounds="True"
     mc:Ignorable="d">
-    <UserControl.ContextMenu>
-        <ContextMenu>
-            <MenuItem Header="Add node" IsEnabled="False"/>
-            <MenuItem Header="Basic">
-                <MenuItem Click="HandleMenuItemOnClick" Header="Constant"/>
-                <MenuItem Click="HandleMenuItemOnClick" Header="Condition"/>
-                <MenuItem Click="HandleMenuItemOnClick" Header="Delay"/>
-            </MenuItem>
-        </ContextMenu>
-    </UserControl.ContextMenu>
+    <!-- <UserControl.ContextMenu> -->
+    <!--     <ContextMenu> -->
+    <!--         <MenuItem Header="Add node" IsEnabled="False"/> -->
+    <!--         <MenuItem Header="Basic"> -->
+    <!--             <MenuItem Click="HandleMenuItemOnClick" Header="Constant"/> -->
+    <!--             <MenuItem Click="HandleMenuItemOnClick" Header="Condition"/> -->
+    <!--             <MenuItem Click="HandleMenuItemOnClick" Header="Delay"/> -->
+    <!--         </MenuItem> -->
+    <!--     </ContextMenu> -->
+    <!-- </UserControl.ContextMenu> -->
 
     <Panel Background="{DynamicResource SukiBorderBrush}">
         <Panel>

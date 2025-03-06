@@ -1,0 +1,5 @@
+﻿CreateJobObject
+SetInformationJobObject
+AssignProcessToJobObject
+JOBOBJECT_BASIC_LIMIT_INFORMATION
+JOBOBJECT_EXTENDED_LIMIT_INFORMATION

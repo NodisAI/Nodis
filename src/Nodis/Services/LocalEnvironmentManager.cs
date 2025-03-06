@@ -1,6 +1,7 @@
 ﻿using System.Formats.Tar;
 using System.IO.Compression;
 using System.Security.Cryptography;
+using Nodis.Extensions;
 using Nodis.Interfaces;
 using Nodis.Models;
 using VYaml.Annotations;
@@ -8,7 +9,10 @@ using VYaml.Serialization;
 
 namespace Nodis.Services;
 
-public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmentManager
+public class LocalEnvironmentManager(
+    INativeInterop nativeInterop,
+    YamlSerializerOptions yamlSerializerOptions
+) : IEnvironmentManager
 {
     private static string SourcesFolderPath => Path.Combine(IEnvironmentManager.DataFolderPath, "Sources");
     private static string NodesFolderPath => Path.Combine(IEnvironmentManager.DataFolderPath, "Nodes");
@@ -24,7 +28,7 @@ public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmen
                      .SelectMany(Directory.EnumerateDirectories)
                      .SelectMany(Directory.EnumerateFiles))
         {
-            if (!Version.TryParse(Path.GetFileNameWithoutExtension(metadataFilePath), out var version)) continue;
+            if (!SemanticVersion.TryParse(Path.GetFileNameWithoutExtension(metadataFilePath), out var version)) continue;
             var folderParts = metadataFilePath.Split(Path.DirectorySeparatorChar);
             if (folderParts[^5].Contains('.') || folderParts[^4].Contains('.')) continue;
             yield return new Metadata($"{folderParts[^5]}.{folderParts[^4]}", folderParts[^2], version);
@@ -35,12 +39,12 @@ public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmen
     {
         if (!Directory.Exists(NodesFolderPath)) yield break;
         foreach (var nodeFolderPath in Directory
-                     .EnumerateDirectories(SourcesFolderPath)
+                     .EnumerateDirectories(NodesFolderPath)
                      .SelectMany(Directory.EnumerateDirectories)
                      .SelectMany(Directory.EnumerateDirectories)
                      .SelectMany(Directory.EnumerateDirectories))
         {
-            if (!Version.TryParse(Path.GetFileNameWithoutExtension(nodeFolderPath), out var version)) continue;
+            if (!SemanticVersion.TryParse(Path.GetFileName(nodeFolderPath), out var version)) continue;
             var folderParts = nodeFolderPath.Split(Path.DirectorySeparatorChar);
             yield return new Metadata($"{folderParts[^4]}.{folderParts[^3]}", folderParts[^2], version);
         }
@@ -82,8 +86,10 @@ public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmen
                     CommandLines = ["git pull"],
                     WorkingDirectory = sourceFolderPath
                 });
-            var result = await execution.WaitAsync();
-            if (result != 0)
+            var result = await execution.WaitAsync(cancellationToken);
+            // 128 means the folder is not a git repository
+            // see https://stackoverflow.com/questions/4917871/does-git-return-specific-return-error-codes
+            if (result == 128)
             {
                 Directory.Delete(sourceFolderPath, true);
                 execution = nativeInterop.BashExecute(
@@ -92,7 +98,7 @@ public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmen
                         CommandLines = [$"git clone {url} {Path.GetFullPath(sourceFolderPath)}"],
                         WorkingDirectory = SourcesFolderPath
                     });
-                result = await execution.WaitAsync();
+                result = await execution.WaitAsync(cancellationToken);
 
                 if (result != 0) throw new Exception($"Failed to clone {url}\n{await execution.StandardError.ReadToEndAsync(cancellationToken)}");
             }
@@ -102,9 +108,8 @@ public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmen
     public async Task<NodeMetadata> LoadNodeAsync(Metadata metadata, CancellationToken cancellationToken)
     {
         var nodeMetadataPath = Path.Combine(
-            SourcesFolderPath,
+            NodesFolderPath,
             metadata.Namespace.Replace('.', Path.DirectorySeparatorChar),
-            "Packages",
             metadata.Name,
             metadata.Version + ".yaml");
         await using var fs = File.OpenRead(nodeMetadataPath);
@@ -127,7 +132,7 @@ public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmen
         throw new FileNotFoundException($"Script {scriptName} not found.");
     }
 
-    private async Task ExecuteInstallOperationAsync(
+    private async ValueTask ExecuteInstallOperationAsync(
         string installationFolderPath,
         NodeInstallOperation operation,
         CancellationToken cancellationToken)
@@ -143,7 +148,7 @@ public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmen
                         CommandLines = [scriptNodeInstallOperation.Args],
                         WorkingDirectory = installationFolderPath
                     });
-                var result = await execution.WaitAsync();
+                var result = await execution.WaitAsync(cancellationToken);
                 break;
             }
             case BashNodeInstallOperation bashNodeInstallOperation:
@@ -154,7 +159,7 @@ public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmen
                         CommandLines = bashNodeInstallOperation.Command.Split(Environment.NewLine),
                         WorkingDirectory = installationFolderPath
                     });
-                var result = await execution.WaitAsync();
+                var result = await execution.WaitAsync(cancellationToken);
                 break;
             }
             default:
@@ -195,7 +200,7 @@ public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmen
                             ],
                             WorkingDirectory = installationFolderPath
                         });
-                    var result = await execution.WaitAsync();
+                    var result = await execution.WaitAsync(cancellationToken);
                     break;
                 }
                 case ExecutableBundleNodeRuntime compressedExecutableNodeSource:
@@ -276,6 +281,43 @@ public class LocalEnvironmentManager(INativeInterop nativeInterop) : IEnvironmen
             await ExecuteInstallOperationAsync(Path.Combine(installationFolderPath, "data"), postInstall, cancellationToken);
         }
     }
+
+    public async Task<IAsyncDisposable> EnsureRuntimesAsync(
+        string @namespace,
+        IEnumerable<NameAndVersionConstraints> runtimeConstraintsList,
+        CancellationToken cancellationToken)
+    {
+        foreach (var runtimeConstraints in runtimeConstraintsList)
+        {
+            var nodeMetadataPathEnumerator = string.IsNullOrEmpty(@namespace) ?
+                Directory.EnumerateDirectories(NodesFolderPath)
+                    .SelectMany(Directory.EnumerateDirectories)
+                    .Select(p => Path.Combine(p, runtimeConstraints.Name))
+                    .Where(Directory.Exists)
+                    .SelectMany(p => Directory.EnumerateFiles(p, "*.yaml")) :
+                Directory.EnumerateFiles(
+                    Path.Combine(NodesFolderPath, @namespace.Replace('.', Path.DirectorySeparatorChar), runtimeConstraints.Name),
+                    "*.yaml");
+            foreach (var nodeMetadataPath in nodeMetadataPathEnumerator)
+            {
+                if (!SemanticVersion.TryParse(Path.GetFileNameWithoutExtension(nodeMetadataPath), out var version)) continue;
+                if (!runtimeConstraints.IsSatisfied(version)) continue;
+                await using var fs = File.OpenRead(nodeMetadataPath);
+                var nodeMetadata = await YamlSerializer.DeserializeAsync<NodeMetadata>(fs, yamlSerializerOptions);
+                _ = nativeInterop.BashExecute(new BashExecutionOptions
+                {
+                    CommandLines = [nodeMetadata.Runtimes[0].To<ExecutableBundleNodeRuntime>().Distributions["win-x64"].Execution.Command],
+                    WorkingDirectory = Path.ChangeExtension(nodeMetadataPath, null)
+                }).WaitAsync(cancellationToken);
+                await Task.Delay(3000, cancellationToken);
+                return null!;
+            }
+        }
+
+        return null!;
+    }
+
+    private readonly record struct RuntimeMetadata(string Namespace, string Name, SemanticVersion Version, string Id);
 }
 
 [YamlObject]

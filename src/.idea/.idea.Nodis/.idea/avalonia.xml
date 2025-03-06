@@ -23,6 +23,7 @@
         <entry key="../3rd/SukiUI/SukiUI/Theme/TextBlock.xaml" value="Nodis/Nodis.csproj" />
         <entry key="../3rd/SukiUI/SukiUI/Theme/TextBoxStyles.xaml" value="Nodis/Nodis.csproj" />
         <entry key="../3rd/SukiUI/SukiUI/Theme/TextStyles.axaml" value="Nodis/Nodis.csproj" />
+        <entry key="../3rd/SukiUI/SukiUI/Theme/TreeViewStyles.xaml" value="Nodis/Nodis.csproj" />
         <entry key="Nodis/App.axaml" value="Nodis/Nodis.csproj" />
         <entry key="Nodis/Styles/Markdown.axaml" value="Nodis/Nodis.csproj" />
         <entry key="Nodis/Views/MainWindow.axaml" value="Nodis/Nodis.csproj" />

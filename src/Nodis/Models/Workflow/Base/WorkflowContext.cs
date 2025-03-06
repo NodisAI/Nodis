@@ -10,11 +10,20 @@ namespace Nodis.Models.Workflow;
 [YamlObject]
 public partial class WorkflowContext : ObservableObject
 {
+    public delegate void NodeChangedEventHandler(WorkflowNode node);
+    public delegate void ConnectionChangedEventHandler(WorkflowNodePortConnection connection);
+
     [YamlIgnore]
     public WorkflowStartNode StartNode { get; }
 
-    [YamlMember("nodes")]
+    [YamlIgnore]
     public IReadOnlySet<WorkflowNode> Nodes => nodes;
+
+    [YamlMember("built_in_nodes")]
+    private IList<WorkflowBuiltInNode> BuiltInNodes => nodes.OfType<WorkflowBuiltInNode>().ToList();
+
+    [YamlMember("user_nodes")]
+    private IList<WorkflowUserNode> UserNodes => nodes.OfType<WorkflowUserNode>().ToList();
 
     [YamlMember("connections")]
     public IReadOnlySet<WorkflowNodePortConnection> Connections => connections;
@@ -22,6 +31,11 @@ public partial class WorkflowContext : ObservableObject
     [ObservableProperty]
     [YamlIgnore]
     public partial WorkflowNodeStates State { get; private set; }
+
+    public event NodeChangedEventHandler? NodeAdded;
+    public event NodeChangedEventHandler? NodeRemoved;
+    public event ConnectionChangedEventHandler? ConnectionAdded;
+    public event ConnectionChangedEventHandler? ConnectionRemoved;
 
     private readonly HashSet<WorkflowNode> nodes = [];
     private readonly Dictionary<int, WorkflowNode> nodesMap = [];
@@ -35,16 +49,20 @@ public partial class WorkflowContext : ObservableObject
     }
 
     [YamlConstructor]
-    private WorkflowContext(IReadOnlySet<WorkflowNode> nodes, IReadOnlySet<WorkflowNodePortConnection> connections)
+    private WorkflowContext(
+        IList<WorkflowBuiltInNode> builtInNodes,
+        IList<WorkflowUserNode> userNodes,
+        IReadOnlySet<WorkflowNodePortConnection> connections)
     {
-        this.nodes.UnionWith(nodes);
+        nodes.UnionWith(builtInNodes);
+        nodes.UnionWith(userNodes);
         foreach (var node in nodes)
         {
             node.Owner = this;
             node.PropertyChanged += HandleNodeOnPropertyChanged;
         }
-        StartNode = this.nodes.OfType<WorkflowStartNode>().Single();
-        nodesMap = this.nodes.ToDictionary(n => n.Id);
+        StartNode = nodes.OfType<WorkflowStartNode>().Single();
+        nodesMap = nodes.ToDictionary(n => n.Id);
         foreach (var connection in connections) AddConnection(connection);
     }
 
@@ -75,6 +93,7 @@ public partial class WorkflowContext : ObservableObject
         if (!nodesMap.TryAdd(node.Id, node)) throw new InvalidOperationException("Node already exists");
         nodes.Add(node);
         node.PropertyChanged += HandleNodeOnPropertyChanged;
+        NodeAdded?.Invoke(node);
     }
 
     public void RemoveNode(WorkflowNode node)
@@ -84,6 +103,7 @@ public partial class WorkflowContext : ObservableObject
         foreach (var connection in connections.Where(c => c.InputNodeId == node.Id || c.OutputNodeId == node.Id).ToArray())
             connections.Remove(connection);
         node.PropertyChanged -= HandleNodeOnPropertyChanged;
+        NodeRemoved?.Invoke(node);
     }
 
     private void HandleNodeOnPropertyChanged(object? o, PropertyChangedEventArgs propertyChangedEventArgs)
@@ -104,13 +124,7 @@ public partial class WorkflowContext : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Adds a connection between two nodes, returns the previous connection if any.
-    /// </summary>
-    /// <param name="connection"></param>
-    /// <returns>previous connection if any, need to remove from View</returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    public WorkflowNodePortConnection? AddConnection(WorkflowNodePortConnection connection)
+    public void AddConnection(WorkflowNodePortConnection connection)
     {
         if (!nodesMap.TryGetValue(connection.OutputNodeId, out var outputNode))
             throw new InvalidOperationException("Invalid connection: outputNode not found");

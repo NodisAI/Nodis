@@ -133,6 +133,21 @@ public partial class WorkflowNodeTextData : WorkflowNodeData
 {
     [YamlIgnore]
     public override WorkflowNodeDataType Type => WorkflowNodeDataType.Text;
+
+    [ObservableProperty]
+    [YamlMember("watermark")]
+    public partial string? Watermark { get; set; }
+
+    [ObservableProperty]
+    [YamlMember("accepts_return")]
+    public partial bool AcceptsReturn { get; set; }
+
+    [ObservableProperty, NotifyPropertyChangedFor((nameof(PasswordChar)))]
+    [YamlMember("secret")]
+    public partial bool IsSecret { get; set; }
+
+    [YamlIgnore]
+    public char PasswordChar => IsSecret ? '*' : (char)0;
 }
 
 [YamlObject]

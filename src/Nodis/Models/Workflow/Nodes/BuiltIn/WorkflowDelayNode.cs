@@ -3,7 +3,7 @@
 namespace Nodis.Models.Workflow;
 
 [YamlObject]
-public partial class WorkflowDelayNode : WorkflowNode
+public partial class WorkflowDelayNode : WorkflowBuiltInNode
 {
     [YamlIgnore]
     public override string Name => "Delay";
@@ -12,7 +12,7 @@ public partial class WorkflowDelayNode : WorkflowNode
     {
         ControlInput = new WorkflowNodeControlInputPin();
         ControlOutputs.Add(new WorkflowNodeControlOutputPin());
-        DataInputs.Add(new WorkflowNodeDataInputPin("seconds", new WorkflowNodeFloatData { Value = 1f }, true));
+        DataInputs.Add(new WorkflowNodeDataInputPin("seconds", new WorkflowNodeFloatData { Value = 1f }));
     }
 
     protected override Task ExecuteImplAsync(CancellationToken cancellationToken) =>

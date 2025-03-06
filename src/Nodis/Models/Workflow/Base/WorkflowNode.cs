@@ -37,12 +37,6 @@ public record WorkflowNodeMenuFlyoutItem(
     };
 }
 
-[YamlObject]
-[YamlObjectUnion("!condition", typeof(WorkflowConditionNode))]
-[YamlObjectUnion("!constant", typeof(WorkflowConstantNode))]
-[YamlObjectUnion("!delay", typeof(WorkflowDelayNode))]
-[YamlObjectUnion("!loop", typeof(WorkflowLoopNode))]
-[YamlObjectUnion("!start", typeof(WorkflowStartNode))]
 public abstract partial class WorkflowNode : ObservableObject
 {
     private static int globalId;
@@ -97,6 +91,9 @@ public abstract partial class WorkflowNode : ObservableObject
     public WorkflowNodePropertyList<WorkflowNodeProperty> Properties { get; }
 
     [YamlIgnore]
+    public virtual object? FooterContent => null;
+
+    [YamlIgnore]
     public virtual IEnumerable<WorkflowNodeMenuFlyoutItem> ContextMenuItems
     {
         get
@@ -118,10 +115,9 @@ public abstract partial class WorkflowNode : ObservableObject
     [YamlIgnore]
     public partial string? ErrorMessage { get; protected set; }
 
-    [YamlConstructor]
-    private WorkflowNode(int id)
+    protected WorkflowNode(int id)
     {
-        Id = id;
+        Id = id == 0 ? Interlocked.Increment(ref globalId) : id;
         ControlOutputs = new WorkflowNodePropertyList<WorkflowNodeControlOutputPin>(this);
         DataInputs = new WorkflowNodePropertyList<WorkflowNodeDataInputPin>(this);
         DataOutputs = new WorkflowNodePropertyList<WorkflowNodeDataOutputPin>(this);

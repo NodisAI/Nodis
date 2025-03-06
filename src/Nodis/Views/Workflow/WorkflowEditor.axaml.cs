@@ -27,8 +27,6 @@ public partial class WorkflowEditor : UserControl
     {
         InitializeComponent();
 
-        WorkflowContext = new WorkflowContext();  // todo: delete me, just for debug
-
         ConnectionItemsControl.ItemsSource = connectionItems.CreateView(p => p.Value)
             .ToNotifyCollectionChanged(SynchronizationContextCollectionEventDispatcher.Current);
 
@@ -45,11 +43,25 @@ public partial class WorkflowEditor : UserControl
         base.OnPropertyChanged(change);
 
         if (change.Property != WorkflowContextProperty) return;
+
         connectionItems.Clear();
         foreach (var wrapper in nodeMap.Values) wrapper.Disposable.Dispose();
-        if (change.NewValue is not WorkflowContext newCtx) return;
-        foreach (var node in newCtx.Nodes) HandleNodeAdded(node);
-        foreach (var connection in newCtx.Connections) HandleConnectionAdded(connection);
+
+        if (change.OldValue is WorkflowContext oldWorkflowContext)
+        {
+            oldWorkflowContext.NodeAdded -= HandleNodeAdded;
+            oldWorkflowContext.NodeRemoved -= HandleNodeRemoved;
+            oldWorkflowContext.ConnectionAdded -= HandleConnectionAdded;
+            oldWorkflowContext.ConnectionRemoved -= HandleConnectionRemoved;
+        }
+
+        if (change.NewValue is not WorkflowContext newWorkflowContext) return;
+        foreach (var node in newWorkflowContext.Nodes) HandleNodeAdded(node);
+        foreach (var connection in newWorkflowContext.Connections) HandleConnectionAdded(connection);
+        newWorkflowContext.NodeAdded += HandleNodeAdded;
+        newWorkflowContext.NodeRemoved += HandleNodeRemoved;
+        newWorkflowContext.ConnectionAdded += HandleConnectionAdded;
+        newWorkflowContext.ConnectionRemoved += HandleConnectionRemoved;
     }
 
     #region Transform
@@ -61,6 +73,16 @@ public partial class WorkflowEditor : UserControl
     private readonly DrawingBrush gridDrawingBrush, compactGridDrawingBrush;
     private const double InitialGridViewSize = 90d;
     private const int CompactGridScale = 12;
+
+    public Rect Viewport
+    {
+        get
+        {
+            var topLeft = this.TranslatePoint(default, NodeCanvas) ?? default;
+            var bottomRight = this.TranslatePoint(new Point(NodeCanvas.Bounds.Width, NodeCanvas.Bounds.Height), NodeCanvas) ?? default;
+            return new Rect(topLeft, bottomRight);
+        }
+    }
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
@@ -262,8 +284,7 @@ public partial class WorkflowEditor : UserControl
             {
                 PreviewConnectionPath.IsVisible = false;
                 var connection = new WorkflowNodePortConnection(e.StartPin.Owner!.Id, e.StartPin.Id, e.EndPin!.Owner!.Id, e.EndPin.Id);
-                if (WorkflowContext.AddConnection(connection) is { } previousConnection) HandleConnectionRemoved(previousConnection);
-                HandleConnectionAdded(connection);
+                WorkflowContext.AddConnection(connection);
                 break;
             }
         }
@@ -361,23 +382,6 @@ public partial class WorkflowEditor : UserControl
     }
 
     #endregion
-
-    private void HandleMenuItemOnClick(object? sender, RoutedEventArgs e)
-    {
-        if (WorkflowContext is not { } ctx || sender is not MenuItem menuItem) return;
-        var position = this.TranslatePoint(rightButtonPressedPoint, NodeCanvas) ?? new Point();
-        WorkflowNode node = menuItem.Header switch
-        {
-            "Condition" => new WorkflowConditionNode(),
-            "Constant" => new WorkflowConstantNode(),
-            "Delay" => new WorkflowDelayNode(),
-            _ => throw new NotImplementedException()
-        };
-        node.X = position.X;
-        node.Y = position.Y;
-        ctx.AddNode(node);
-        HandleNodeAdded(node);
-    }
 
     private async void HandleSaveButtonOnClick(object? sender, RoutedEventArgs e)
     {

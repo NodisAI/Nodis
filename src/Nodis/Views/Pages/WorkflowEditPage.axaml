@@ -1,9 +1,50 @@
 ﻿<v:ReactiveUserControl
     x:Class="Nodis.Views.WorkflowEditPage" xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ip="https://github.com/MahApps/IconPacks.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:v="clr-namespace:Nodis.Views"
     xmlns:vm="clr-namespace:Nodis.ViewModels" xmlns:wf="clr-namespace:Nodis.Views.Workflow"
-    d:DesignHeight="450" d:DesignWidth="800"
-    x:TypeArguments="vm:WorkflowEditPageViewModel" mc:Ignorable="d">
-    <wf:WorkflowEditor/>
+    d:DesignHeight="450" d:DesignWidth="1600"
+    x:DataType="vm:WorkflowEditPageViewModel" x:TypeArguments="vm:WorkflowEditPageViewModel"
+    mc:Ignorable="d">
+    <Grid ColumnDefinitions="5*,*">
+        <wf:WorkflowEditor
+            x:Name="WorkflowEditor" Grid.Column="0"
+            WorkflowContext="{Binding WorkflowContext, Mode=TwoWay}"/>
+        <TreeView Grid.Column="1" ItemsSource="{Binding NodeGroups}">
+            <TreeView.DataTemplates>
+                <TreeDataTemplate DataType="vm:WorkflowEditPageViewModel+NodeGroup">
+                    <TreeDataTemplate.ItemsSource>
+                        <Binding Path="Items"/>
+                    </TreeDataTemplate.ItemsSource>
+                    <TextBlock Text="{Binding Name}"/>
+                </TreeDataTemplate>
+
+                <DataTemplate DataType="vm:WorkflowEditPageViewModel+NodeTemplate">
+                    <Button HorizontalContentAlignment="Stretch" Click="HandleAddNodeButtonOnClick">
+                        <StackPanel
+                            HorizontalAlignment="Left" Orientation="Horizontal"
+                            Spacing="8">
+                            <ip:PackIconEvaIcons
+                                Width="12" Height="12"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Kind="{Binding Icon}"/>
+                            <TextBlock VerticalAlignment="Center" Text="{Binding Name}"/>
+                        </StackPanel>
+                    </Button>
+                </DataTemplate>
+            </TreeView.DataTemplates>
+
+            <TreeView.Styles>
+                <Style Selector="TreeViewItem:not(TreeViewItem[Level=0])">
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Focusable" Value="False"/>
+                </Style>
+
+                <Style Selector="TreeViewItem:not(TreeViewItem[Level=0]):pointerover /template/ Border#SelectionBorder:pointerover">
+                    <Setter Property="Background" Value="Transparent"/>
+                </Style>
+            </TreeView.Styles>
+        </TreeView>
+    </Grid>
 </v:ReactiveUserControl>

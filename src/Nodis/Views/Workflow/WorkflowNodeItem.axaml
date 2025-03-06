@@ -26,7 +26,7 @@
                         <SolidColorBrush Opacity="0.75" Color="{DynamicResource SukiGlassCardOpaqueBackground}"/>
                     </Border.Background>
 
-                    <Grid RowDefinitions="32,1,Auto,Auto">
+                    <Grid RowDefinitions="32,5,Auto,Auto">
                         <DockPanel Grid.Row="0" LastChildFill="True">
                             <Border
                                 x:Name="PART_StatusIndicator" DockPanel.Dock="Left"
@@ -97,14 +97,12 @@
                         </DockPanel>
 
                         <Border
-                            Grid.Row="1"
+                            Grid.Row="1" Margin="0,0,0,4"
                             Background="{DynamicResource SukiControlBorderBrush}"
                             IsHitTestVisible="False"/>
 
-                        <UniformGrid
-                            Grid.Row="2" Columns="2"
-                            Rows="1">
-                            <StackPanel Orientation="Vertical">
+                        <Grid Grid.Row="2" ColumnDefinitions="Auto,8,*">
+                            <StackPanel Grid.Column="0" Orientation="Vertical">
                                 <Panel
                                     x:Name="PART_ControlInputPinPanel" Height="20"
                                     IsVisible="{Binding Node.ControlInput, Converter={x:Static ObjectConverters.IsNotNull}, RelativeSource={RelativeSource TemplatedParent}}">
@@ -173,7 +171,7 @@
                                                     <vwf:WorkflowNodeDataInput.IsVisible>
                                                         <MultiBinding Converter="{x:Static BoolConverters.And}">
                                                             <Binding Converter="{x:Static ObjectConverters.IsNull}" Path="Connection"/>
-                                                            <Binding Path="HasData"/>
+                                                            <Binding Path="CanUserInput"/>
                                                         </MultiBinding>
                                                     </vwf:WorkflowNodeDataInput.IsVisible>
                                                 </vwf:WorkflowNodeDataInput>
@@ -183,7 +181,7 @@
                                 </ItemsControl>
                             </StackPanel>
 
-                            <StackPanel Orientation="Vertical">
+                            <StackPanel Grid.Column="2" Orientation="Vertical">
                                 <ItemsControl x:Name="PART_ControlOutputPinItemsControl" ItemsSource="{Binding Node.ControlOutputs.Bindable, RelativeSource={RelativeSource TemplatedParent}}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="mwf:WorkflowNodeControlOutputPin">
@@ -196,7 +194,7 @@
                                                     Text="{Binding Name}"/>
                                                 <Path
                                                     Width="11" Height="11"
-                                                    Margin="0,0,9,0" HorizontalAlignment="Right"
+                                                    Margin="0,0,10,0" HorizontalAlignment="Right"
                                                     VerticalAlignment="Center"
                                                     Data="{StaticResource ControlPortGeometry}"
                                                     IsHitTestVisible="False" StrokeThickness="1">
@@ -253,7 +251,7 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </StackPanel>
-                        </UniformGrid>
+                        </Grid>
 
                         <ItemsControl
                             Grid.Row="3" Margin="11,8"

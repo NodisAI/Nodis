@@ -6,6 +6,7 @@
     </Design.PreviewWith>
 
     <Style Selector="vwf|WorkflowNodeDataInput">
+        <Setter Property="MaxWidth" Value="256"/>
         <Setter Property="Template">
             <ControlTemplate>
                 <ContentPresenter Content="{TemplateBinding Data}" IsVisible="{TemplateBinding IsDataSupported}">
@@ -32,7 +33,13 @@
                         </DataTemplate>
 
                         <DataTemplate DataType="mwf:WorkflowNodeTextData">
-                            <TextBox MinHeight="24" Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBox
+                                MinHeight="24"
+                                AcceptsReturn="{Binding AcceptsReturn}"
+                                PasswordChar="{Binding PasswordChar}"
+                                Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                TextWrapping="Wrap"
+                                Watermark="{Binding Watermark}"/>
                         </DataTemplate>
 
                         <DataTemplate DataType="mwf:WorkflowNodeListData">

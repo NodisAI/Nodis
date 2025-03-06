@@ -4,7 +4,7 @@ using VYaml.Annotations;
 namespace Nodis.Models.Workflow;
 
 [YamlObject]
-public sealed partial class WorkflowStartNode : WorkflowNode
+public sealed partial class WorkflowStartNode : WorkflowBuiltInNode
 {
     [YamlIgnore]
     public override string Name => "Start";

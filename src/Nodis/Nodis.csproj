@@ -28,7 +28,10 @@
         <PackageReference Include="JsonPath.Net" />
         <PackageReference Include="Markdig"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection"/>
-        <PackageReference Include="Microsoft.PowerShell.Native"/>
+        <PackageReference Include="Microsoft.Windows.CsWin32">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="ObservableCollections" />
         <PackageReference Include="System.Reactive" />
     </ItemGroup>

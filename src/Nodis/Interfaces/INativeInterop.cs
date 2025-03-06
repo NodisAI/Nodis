@@ -15,5 +15,5 @@ public interface IBashExecution
 
     StreamReader StandardError { get; }
 
-    Task<int> WaitAsync();
+    Task<int> WaitAsync(CancellationToken cancellationToken);
 }
