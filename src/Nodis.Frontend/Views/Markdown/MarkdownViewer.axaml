@@ -1,0 +1,11 @@
+﻿<Styles
+    xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:md="clr-namespace:Nodis.Frontend.Views.Markdown">
+    <Style Selector="md|MarkdownViewer">
+        <Setter Property="Template">
+            <ControlTemplate TargetType="md:MarkdownViewer">
+                <ContentControl Content="{Binding RenderedContent, RelativeSource={RelativeSource TemplatedParent}}"/>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>

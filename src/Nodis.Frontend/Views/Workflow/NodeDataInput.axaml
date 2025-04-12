@@ -1,0 +1,57 @@
+﻿<Styles
+    xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mwf="using:Nodis.Core.Models.Workflow" xmlns:vwf="using:Nodis.Frontend.Views.Workflow">
+    <Design.PreviewWith>
+        <vwf:NodeDataInput/>
+    </Design.PreviewWith>
+
+    <Style Selector="vwf|NodeDataInput">
+        <Setter Property="MaxWidth" Value="256"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ContentPresenter Content="{TemplateBinding Data}" IsVisible="{TemplateBinding IsDataSupported}">
+                    <ContentPresenter.DataTemplates>
+                        <DataTemplate DataType="mwf:NodeBooleanData">
+                            <CheckBox IsChecked="{Binding Value, Mode=TwoWay}"/>
+                        </DataTemplate>
+
+                        <DataTemplate DataType="mwf:NodeInt64Data">
+                            <NumericUpDown
+                                Height="24" Increment="1"
+                                Maximum="{Binding Max}"
+                                Minimum="{Binding Min}"
+                                Value="{Binding Value, Mode=TwoWay}"/>
+                        </DataTemplate>
+
+                        <DataTemplate DataType="mwf:NodeDoubleData">
+                            <NumericUpDown
+                                Height="24"
+                                Increment="{Binding Precision}"
+                                Maximum="{Binding Max}"
+                                Minimum="{Binding Min}"
+                                Value="{Binding Value, Mode=TwoWay}"/>
+                        </DataTemplate>
+
+                        <DataTemplate DataType="mwf:NodeStringData">
+                            <TextBox
+                                MinWidth="80" MinHeight="24"
+                                AcceptsReturn="{Binding AcceptsReturn}"
+                                PasswordChar="{Binding PasswordChar}"
+                                Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                TextWrapping="Wrap"
+                                Watermark="{Binding Watermark}"/>
+                        </DataTemplate>
+
+                        <DataTemplate DataType="mwf:NodeEnumData">
+                            <ComboBox ItemsSource="{Binding Values}" SelectedItem="{Binding Value, Mode=TwoWay}"/>
+                        </DataTemplate>
+
+                        <DataTemplate DataType="mwf:NodeEnumerableData">
+                            <ComboBox ItemsSource="{Binding Value}" SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"/>
+                        </DataTemplate>
+                    </ContentPresenter.DataTemplates>
+                </ContentPresenter>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>

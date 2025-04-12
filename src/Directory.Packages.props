@@ -5,8 +5,16 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Basic packages -->
+    <PackageVersion Include="Castle.Core" Version="5.2.1" />
+    <PackageVersion Include="Grpc.AspNetCore" Version="2.70.0" />
     <PackageVersion Include="JsonPath.Net" Version="2.1.1" />
+    <PackageVersion Include="MessagePack" Version="3.1.3" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.4" />
+    <PackageVersion Include="Microsoft.SemanticKernel" Version="1.44.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.44.0" />
     <PackageVersion Include="ObservableCollections" Version="3.3.3" />
+    <PackageVersion Include="OneOf" Version="3.0.271" />
+    <PackageVersion Include="System.Linq.Async" Version="6.0.1" />
     <PackageVersion Include="System.Reactive" Version="6.0.1" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />

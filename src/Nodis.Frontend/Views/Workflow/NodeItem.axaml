@@ -1,0 +1,268 @@
+﻿<Styles
+    xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ip="https://github.com/MahApps/IconPacks.Avalonia" xmlns:mwf="using:Nodis.Core.Models.Workflow"
+    xmlns:vc="using:Nodis.Frontend.ValueConverters" xmlns:vwf="using:Nodis.Frontend.Views.Workflow">
+    <Design.PreviewWith>
+        <vwf:NodeItem/>
+    </Design.PreviewWith>
+
+    <Style Selector="Path.NodePin">
+        <Style.Resources>
+            <Geometry x:Key="ControlPortGeometry">m1.2 0h6a2.2 1.8 90 011.2.7l0 0 3.6 4.3a1 1 90 010 1l-3.6 4.3a2.2 1.8 90 01-1.2.7h-6a1.5 1.2 90 01-1.2-1.5v-8a1.5 1.2 90 011.2-1.5z</Geometry>
+        </Style.Resources>
+
+        <Setter Property="Width" Value="11"/>
+        <Setter Property="Height" Value="11"/>
+        <Setter Property="Data" Value="{StaticResource ControlPortGeometry}"/>
+        <Setter Property="StrokeThickness" Value="1"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style Selector="Border.NodePin">
+        <Setter Property="Width" Value="11"/>
+        <Setter Property="Height" Value="11"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="CornerRadius" Value="6"/>
+    </Style>
+
+    <Style Selector="vwf|NodeItem">
+        <Style.Resources>
+            <vc:NodeStatusToColorConverter x:Key="StatusToColorConverter"/>
+        </Style.Resources>
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border x:Name="PART_DraggableRoot" CornerRadius="8">
+                    <Border.Styles>
+                        <Style Selector="TextBlock">
+                            <Setter Property="IsHitTestVisible" Value="False"/>
+                        </Style>
+                    </Border.Styles>
+
+                    <Border.Background>
+                        <SolidColorBrush Opacity="0.75" Color="{DynamicResource SukiGlassCardOpaqueBackground}"/>
+                    </Border.Background>
+
+                    <Grid RowDefinitions="32,5,Auto,Auto">
+                        <DockPanel Grid.Row="0" LastChildFill="True">
+                            <Border
+                                x:Name="PART_StatusIndicator" DockPanel.Dock="Left"
+                                Width="16" Height="16"
+                                Margin="8"
+                                Background="{Binding Node.State, Converter={StaticResource StatusToColorConverter}, RelativeSource={RelativeSource TemplatedParent}}"
+                                CornerRadius="8" ToolTip.Placement="Top">
+                                <ToolTip.Tip>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock>
+                                            <Run Text="Node is"/>
+                                            <Run Text="{Binding Node.State, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        </TextBlock>
+                                        <TextBlock IsVisible="{Binding Node.ErrorMessage, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding Node.ErrorMessage, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    </StackPanel>
+                                </ToolTip.Tip>
+                            </Border>
+
+                            <TextBlock
+                                Margin="4,0" VerticalAlignment="Center"
+                                Text="{Binding Node.Name, RelativeSource={RelativeSource TemplatedParent}}"/>
+
+                            <Button
+                                DockPanel.Dock="Right" Margin="8,4"
+                                Padding="2" HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Foreground="{DynamicResource SukiText}">
+                                <Button.Flyout>
+                                    <Flyout>
+                                        <ContextMenu ItemsSource="{Binding ContextMenuItems, RelativeSource={RelativeSource TemplatedParent}}">
+                                            <ContextMenu.ItemContainerTheme>
+                                                <ControlTheme
+                                                    x:DataType="vwf:WorkflowNodeMenuFlyoutItem"
+                                                    BasedOn="{StaticResource SukiMenuItemStyle}"
+                                                    TargetType="MenuItem">
+                                                    <Setter Property="Header" Value="{Binding Header}"/>
+                                                    <Setter Property="ItemsSource" Value="{Binding Items}"/>
+                                                    <Setter Property="Command" Value="{Binding Command}"/>
+                                                    <Setter Property="CommandParameter" Value="{Binding CommandParameter}"/>
+                                                    <Setter Property="Icon">
+                                                        <Setter.Value>
+                                                            <Template>
+                                                                <ip:PackIconEvaIcons
+                                                                    Width="12" Height="12"
+                                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                    Kind="{Binding Icon}"/>
+                                                            </Template>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                    <Setter Property="Foreground" Value="{Binding Foreground}"/>
+                                                </ControlTheme>
+                                            </ContextMenu.ItemContainerTheme>
+                                        </ContextMenu>
+                                    </Flyout>
+                                </Button.Flyout>
+
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="Transparent">
+                                            <ip:PackIconEvaIcons
+                                                Width="16" Height="16"
+                                                Foreground="{DynamicResource SukiLowText}"
+                                                Kind="Menu"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </DockPanel>
+
+                        <Border
+                            Grid.Row="1" Margin="0,0,0,4"
+                            Background="{DynamicResource SukiControlBorderBrush}"
+                            IsHitTestVisible="False"/>
+
+                        <Grid Grid.Row="2" ColumnDefinitions="Auto,8,*">
+                            <StackPanel Grid.Column="0" Orientation="Vertical">
+                                <Panel x:Name="PART_ControlInputPinPanel" Height="20">
+                                    <Panel.IsVisible>
+                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                            <Binding
+                                                Converter="{x:Static ObjectConverters.IsNotNull}"
+                                                Path="ControlInput"
+                                                RelativeSource="{RelativeSource TemplatedParent}"/>
+                                            <Binding
+                                                FallbackValue="False" Path="ControlInput.Pin.IsVisible"
+                                                RelativeSource="{RelativeSource TemplatedParent}"/>
+                                        </MultiBinding>
+                                    </Panel.IsVisible>
+                                    <Path
+                                        Margin="11,0,0,0" HorizontalAlignment="Left"
+                                        Classes="NodePin">
+                                        <Path.Stroke>
+                                            <SolidColorBrush Color="{Binding ControlInput.StrokeColor, FallbackValue={x:Null}, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        </Path.Stroke>
+                                        <Path.Fill>
+                                            <SolidColorBrush Color="{Binding ControlInput.FillColor, FallbackValue={x:Null}, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        </Path.Fill>
+                                    </Path>
+                                    <TextBlock
+                                        Margin="25,0,0,0" VerticalAlignment="Center"
+                                        Text="{Binding Node.ControlInput.Name, FallbackValue={x:Null}, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                </Panel>
+
+                                <ItemsControl x:Name="PART_DataInputPinItemsControl" ItemsSource="{Binding DataInputs, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <DataTemplate.DataType>
+                                                <x:Type x:TypeArguments="mwf:NodeDataInputPin" TypeName="vwf:NodePinWrapper"/>
+                                            </DataTemplate.DataType>
+                                            <Panel x:Name="PART_DataInputPin" IsVisible="{Binding Pin.IsVisible}">
+                                                <Panel
+                                                    Height="20" HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top">
+                                                    <Border
+                                                        Margin="10,0,0,0" HorizontalAlignment="Left"
+                                                        Classes="NodePin">
+                                                        <Border.BorderBrush>
+                                                            <SolidColorBrush Color="{Binding StrokeColor}"/>
+                                                        </Border.BorderBrush>
+                                                        <Border.Background>
+                                                            <SolidColorBrush Color="{Binding FillColor}"/>
+                                                        </Border.Background>
+                                                    </Border>
+                                                    <TextBlock
+                                                        Margin="25,0,0,0" VerticalAlignment="Center"
+                                                        Text="{Binding TypedPin.Name}"/>
+                                                </Panel>
+
+                                                <vwf:NodeDataInput Margin="25,25,0,0" Data="{Binding TypedPin.Data}">
+                                                    <vwf:NodeDataInput.IsVisible>
+                                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                            <Binding Converter="{x:Static ObjectConverters.IsNull}" Path="TypedPin.Connection"/>
+                                                            <Binding Path="TypedPin.CanUserInput"/>
+                                                        </MultiBinding>
+                                                    </vwf:NodeDataInput.IsVisible>
+                                                </vwf:NodeDataInput>
+                                            </Panel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Orientation="Vertical">
+                                <ItemsControl x:Name="PART_ControlOutputPinItemsControl" ItemsSource="{Binding ControlOutputs, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <DataTemplate.DataType>
+                                                <x:Type x:TypeArguments="mwf:NodeControlOutputPin" TypeName="vwf:NodePinWrapper"/>
+                                            </DataTemplate.DataType>
+                                            <Panel
+                                                x:Name="PART_ControlOutputPin" Height="20"
+                                                Background="Transparent"
+                                                IsVisible="{Binding Pin.IsVisible}">
+                                                <TextBlock
+                                                    Margin="0,0,25,0" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center" IsHitTestVisible="False"
+                                                    Text="{Binding TypedPin.Name}"/>
+                                                <Path
+                                                    Margin="0,0,10,0" HorizontalAlignment="Right"
+                                                    Classes="NodePin" IsHitTestVisible="False">
+                                                    <Path.Stroke>
+                                                        <SolidColorBrush Color="{Binding StrokeColor}"/>
+                                                    </Path.Stroke>
+                                                    <Path.Fill>
+                                                        <SolidColorBrush Color="{Binding FillColor}"/>
+                                                    </Path.Fill>
+                                                </Path>
+                                            </Panel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <ItemsControl x:Name="PART_DataOutputPinItemsControl" ItemsSource="{Binding DataOutputs, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <DataTemplate.DataType>
+                                                <x:Type x:TypeArguments="mwf:NodeDataOutputPin" TypeName="vwf:NodePinWrapper"/>
+                                            </DataTemplate.DataType>
+                                            <Panel
+                                                x:Name="PART_DataOutputPin" Height="20"
+                                                Background="Transparent"
+                                                IsVisible="{Binding Pin.IsVisible}">
+                                                <TextBlock
+                                                    Margin="0,0,25,0" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center" IsHitTestVisible="False"
+                                                    Text="{Binding TypedPin.Name}"/>
+                                                <Border
+                                                    Margin="0,0,10,0" HorizontalAlignment="Right"
+                                                    Classes="NodePin" IsHitTestVisible="False">
+                                                    <Border.BorderBrush>
+                                                        <SolidColorBrush Color="{Binding StrokeColor}"/>
+                                                    </Border.BorderBrush>
+                                                    <Border.Background>
+                                                        <SolidColorBrush Color="{Binding FillColor}"/>
+                                                    </Border.Background>
+                                                </Border>
+                                            </Panel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Grid>
+
+                        <ItemsControl
+                            Grid.Row="3" Margin="11,8"
+                            ItemsSource="{Binding Node.Properties.Bindable, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="mwf:NodeProperty">
+                                    <Panel Margin="0,0,0,8">
+                                        <TextBlock Classes="h5" Text="{Binding Name}"/>
+                                        <vwf:NodeDataInput Margin="0,16,0,0" Data="{Binding Data}"/>
+                                    </Panel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>
