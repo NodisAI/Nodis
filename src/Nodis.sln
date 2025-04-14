@@ -9,6 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_", "_", "{7E95592F-2422-42
 		Directory.Build.props = Directory.Build.props
 		Directory.Packages.props = Directory.Packages.props
 		..\.gitmodules = ..\.gitmodules
+		..\global.json = ..\global.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ThirdParty", "ThirdParty", "{E35D503E-7B7E-489D-9D8F-9819402F9290}"
@@ -24,6 +25,27 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nodis.Frontend", "Nodis.Frontend\Nodis.Frontend.csproj", "{79EB72E3-C42F-477F-8E29-61AD4BBD1C9B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nodis", "Nodis\Nodis.csproj", "{5BABB178-913F-4E21-8FA6-9D8011B6DB67}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "VYaml", "VYaml", "{0FE711E6-7950-4051-A09A-FECC3998181D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MessagePack-CSharp", "MessagePack-CSharp", "{4A0ED0F8-E82F-4867-99B1-0483A931FF7B}"
+	ProjectSection(SolutionItems) = preProject
+		..\3rd\MessagePack-CSharp\Directory.Build.props = ..\3rd\MessagePack-CSharp\Directory.Build.props
+		..\3rd\MessagePack-CSharp\Directory.Build.rsp = ..\3rd\MessagePack-CSharp\Directory.Build.rsp
+		..\3rd\MessagePack-CSharp\Directory.Build.targets = ..\3rd\MessagePack-CSharp\Directory.Build.targets
+		..\3rd\MessagePack-CSharp\Directory.Packages.props = ..\3rd\MessagePack-CSharp\Directory.Packages.props
+		..\3rd\MessagePack-CSharp\global.json = ..\3rd\MessagePack-CSharp\global.json
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessagePack.Annotations", "..\3rd\MessagePack-CSharp\src\MessagePack.Annotations\MessagePack.Annotations.csproj", "{BDF4D6B3-A8E5-4EEB-9F0B-C9762FCB100B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessagePack.SourceGenerator", "..\3rd\MessagePack-CSharp\src\MessagePack.SourceGenerator\MessagePack.SourceGenerator.csproj", "{729EAE2F-918E-4D47-B842-00965E608296}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessagePack.Analyzers.CodeFixes", "..\3rd\MessagePack-CSharp\src\MessagePack.Analyzers.CodeFixes\MessagePack.Analyzers.CodeFixes.csproj", "{1F62B205-1A3D-433C-8F13-869322A3E340}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessagePack", "..\3rd\MessagePack-CSharp\src\MessagePack\MessagePack.csproj", "{8F34A8D1-8AC8-46DC-9D84-B5926E38FC92}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessagePack.Analyzers", "..\3rd\MessagePack-CSharp\src\MessagePack.Analyzers\MessagePack.Analyzers.csproj", "{8FB286D8-EDD2-4532-B154-50D6D544520D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,10 +81,37 @@ Global
 		{5BABB178-913F-4E21-8FA6-9D8011B6DB67}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5BABB178-913F-4E21-8FA6-9D8011B6DB67}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5BABB178-913F-4E21-8FA6-9D8011B6DB67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F34A8D1-8AC8-46DC-9D84-B5926E38FC92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F34A8D1-8AC8-46DC-9D84-B5926E38FC92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F34A8D1-8AC8-46DC-9D84-B5926E38FC92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F34A8D1-8AC8-46DC-9D84-B5926E38FC92}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8FB286D8-EDD2-4532-B154-50D6D544520D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FB286D8-EDD2-4532-B154-50D6D544520D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FB286D8-EDD2-4532-B154-50D6D544520D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FB286D8-EDD2-4532-B154-50D6D544520D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F62B205-1A3D-433C-8F13-869322A3E340}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F62B205-1A3D-433C-8F13-869322A3E340}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F62B205-1A3D-433C-8F13-869322A3E340}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F62B205-1A3D-433C-8F13-869322A3E340}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDF4D6B3-A8E5-4EEB-9F0B-C9762FCB100B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDF4D6B3-A8E5-4EEB-9F0B-C9762FCB100B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDF4D6B3-A8E5-4EEB-9F0B-C9762FCB100B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDF4D6B3-A8E5-4EEB-9F0B-C9762FCB100B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{729EAE2F-918E-4D47-B842-00965E608296}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{729EAE2F-918E-4D47-B842-00965E608296}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{729EAE2F-918E-4D47-B842-00965E608296}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{729EAE2F-918E-4D47-B842-00965E608296}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4DB1BE4B-32ED-4501-8313-B1DBAAC98F13} = {E35D503E-7B7E-489D-9D8F-9819402F9290}
-		{E17EF2FA-DCCB-4090-98E0-32DA39D37621} = {E35D503E-7B7E-489D-9D8F-9819402F9290}
-		{61C8D3FF-883E-46E5-8182-821E2311B95E} = {E35D503E-7B7E-489D-9D8F-9819402F9290}
+		{0FE711E6-7950-4051-A09A-FECC3998181D} = {E35D503E-7B7E-489D-9D8F-9819402F9290}
+		{E17EF2FA-DCCB-4090-98E0-32DA39D37621} = {0FE711E6-7950-4051-A09A-FECC3998181D}
+		{61C8D3FF-883E-46E5-8182-821E2311B95E} = {0FE711E6-7950-4051-A09A-FECC3998181D}
+		{4A0ED0F8-E82F-4867-99B1-0483A931FF7B} = {E35D503E-7B7E-489D-9D8F-9819402F9290}
+		{BDF4D6B3-A8E5-4EEB-9F0B-C9762FCB100B} = {4A0ED0F8-E82F-4867-99B1-0483A931FF7B}
+		{729EAE2F-918E-4D47-B842-00965E608296} = {4A0ED0F8-E82F-4867-99B1-0483A931FF7B}
+		{1F62B205-1A3D-433C-8F13-869322A3E340} = {4A0ED0F8-E82F-4867-99B1-0483A931FF7B}
+		{8F34A8D1-8AC8-46DC-9D84-B5926E38FC92} = {4A0ED0F8-E82F-4867-99B1-0483A931FF7B}
+		{8FB286D8-EDD2-4532-B154-50D6D544520D} = {4A0ED0F8-E82F-4867-99B1-0483A931FF7B}
 	EndGlobalSection
 EndGlobal
