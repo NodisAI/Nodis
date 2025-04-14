@@ -2,7 +2,7 @@
 using Avalonia.Media;
 using AvaloniaDocs = Avalonia.Controls.Documents;
 
-namespace Nodis.Frontend.Views.Markdown;
+namespace Nodis.Frontend.Views;
 
 public static class MarkdownAvaloniaRendererExtensions
 {

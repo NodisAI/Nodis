@@ -7,7 +7,7 @@ namespace Nodis.Core.Models.Workflow;
 public partial class VariableNode : BuiltInNode
 {
     [YamlIgnore]
-    public override string Name => "Constant";
+    public override string Name => "Variable";
 
     [YamlMember("items")]
     private IEnumerable<WorkflowConstantNodeYamlItem> YamlItems
@@ -26,10 +26,11 @@ public partial class VariableNode : BuiltInNode
 
     public static ReadOnlySpan<NodeDataType> SupportedDataTypes => new[]
     {
-        NodeDataType.String,
+        NodeDataType.Boolean,
         NodeDataType.Int64,
         NodeDataType.Double,
-        NodeDataType.Boolean
+        NodeDataType.String,
+        NodeDataType.DateTime,
     };
 
     [RelayCommand]
@@ -40,9 +41,17 @@ public partial class VariableNode : BuiltInNode
         string name;
         do name = $"{namePrefix} {index++}";
         while (Properties.Any(p => p.Name == name));
-        var data = NodeData.CreateDefault(dataType);
-        Properties.Add(new NodeProperty(name, data));
-        DataOutputs.Add(new NodeDataOutputPin(name, data));
+        NodeData nodeData = dataType switch
+        {
+            NodeDataType.Boolean => new NodeBooleanData(false),
+            NodeDataType.Int64 => new NodeInt64Data(0L),
+            NodeDataType.Double => new NodeDoubleData(0d),
+            NodeDataType.String => new NodeStringData(string.Empty),
+            NodeDataType.DateTime => new NodeDateTimeData(DateTime.Now),
+            _ => throw new ArgumentOutOfRangeException(nameof(dataType), dataType, null)
+        };
+        Properties.Add(new NodeProperty(name, nodeData));
+        DataOutputs.Add(new NodeDataOutputPin(name, nodeData));
     }
 
     [RelayCommand]

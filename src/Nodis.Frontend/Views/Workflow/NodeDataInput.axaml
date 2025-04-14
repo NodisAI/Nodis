@@ -1,11 +1,11 @@
 ﻿<Styles
     xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:mwf="using:Nodis.Core.Models.Workflow" xmlns:vwf="using:Nodis.Frontend.Views.Workflow">
+    xmlns:mwf="using:Nodis.Core.Models.Workflow" xmlns:v="clr-namespace:Nodis.Frontend.Views">
     <Design.PreviewWith>
-        <vwf:NodeDataInput/>
+        <v:NodeDataInput/>
     </Design.PreviewWith>
 
-    <Style Selector="vwf|NodeDataInput">
+    <Style Selector="v|NodeDataInput">
         <Setter Property="MaxWidth" Value="256"/>
         <Setter Property="Template">
             <ControlTemplate>
@@ -25,7 +25,7 @@
 
                         <DataTemplate DataType="mwf:NodeDoubleData">
                             <NumericUpDown
-                                Height="24"
+                                MinHeight="28"
                                 Increment="{Binding Precision}"
                                 Maximum="{Binding Max}"
                                 Minimum="{Binding Min}"
@@ -34,7 +34,7 @@
 
                         <DataTemplate DataType="mwf:NodeStringData">
                             <TextBox
-                                MinWidth="80" MinHeight="24"
+                                MinWidth="80" MinHeight="28"
                                 AcceptsReturn="{Binding AcceptsReturn}"
                                 PasswordChar="{Binding PasswordChar}"
                                 Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -43,11 +43,17 @@
                         </DataTemplate>
 
                         <DataTemplate DataType="mwf:NodeEnumData">
-                            <ComboBox ItemsSource="{Binding Values}" SelectedItem="{Binding Value, Mode=TwoWay}"/>
+                            <ComboBox
+                                MinHeight="28"
+                                ItemsSource="{Binding Values}"
+                                SelectedItem="{Binding Value, Mode=TwoWay}"/>
                         </DataTemplate>
 
                         <DataTemplate DataType="mwf:NodeEnumerableData">
-                            <ComboBox ItemsSource="{Binding Value}" SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"/>
+                            <ComboBox
+                                MinHeight="28"
+                                ItemsSource="{Binding Value}"
+                                SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"/>
                         </DataTemplate>
                     </ContentPresenter.DataTemplates>
                 </ContentPresenter>

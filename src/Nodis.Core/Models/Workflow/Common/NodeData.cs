@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MessagePack;
 using Nodis.Core.Extensions;
@@ -47,7 +48,7 @@ public abstract partial class NodeData : ObservableObject
     public Guid NetworkObjectId
     {
         get => tracker.Id;
-        internal set => tracker.Id = value;
+        protected set => tracker.Id = value;
     }
 
     [YamlIgnore]
@@ -94,24 +95,6 @@ public abstract partial class NodeData : ObservableObject
     /// <param name="value"></param>
     /// <exception cref="Exception">Throw an exception if the value cannot be converted.</exception>
     public virtual object? ConvertValue(object? value) => value;
-
-    public static NodeData CreateDefault(NodeDataType type)
-    {
-        return type switch
-        {
-            NodeDataType.Object => new NodeAnyData(),
-            NodeDataType.Boolean => new NodeBooleanData(false),
-            NodeDataType.Int64 => new NodeInt64Data(0),
-            NodeDataType.Double => new NodeDoubleData(0f),
-            NodeDataType.String => new NodeStringData(string.Empty),
-            NodeDataType.DateTime => new NodeDateTimeData(DateTime.Now),
-            NodeDataType.Enum => new NodeEnumData([]),
-            NodeDataType.Enumerable => new NodeEnumerableData(new ArrayList()),
-            NodeDataType.Dictionary => new NodeDictionaryData(new Hashtable()),
-            NodeDataType.Stream => new NodeStreamData([]),
-            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
-        };
-    }
 }
 
 [YamlObject]
@@ -135,7 +118,7 @@ public partial class NodeBooleanData : NodeData
     }
 
     [YamlConstructor]
-    internal NodeBooleanData() { }
+    private NodeBooleanData() { }
 
     [YamlIgnore]
     [IgnoreMember]
@@ -158,7 +141,7 @@ public partial class NodeInt64Data : NodeData
     }
 
     [YamlConstructor]
-    internal NodeInt64Data() { }
+    private NodeInt64Data() { }
 
     [YamlIgnore]
     [IgnoreMember]
@@ -194,7 +177,7 @@ public partial class NodeDoubleData : NodeData
     }
 
     [YamlConstructor]
-    internal NodeDoubleData() { }
+    private NodeDoubleData() { }
 
     [YamlIgnore]
     [IgnoreMember]
@@ -230,13 +213,13 @@ public partial class NodeDoubleData : NodeData
 [MessagePackObject(AllowPrivate = true)]
 public partial class NodeStringData : NodeData
 {
-    public NodeStringData(string value)
+    public NodeStringData(string value = "")
     {
         Value = value;
     }
 
     [YamlConstructor]
-    internal NodeStringData() { }
+    private NodeStringData() { }
 
     [YamlIgnore]
     [IgnoreMember]
@@ -283,7 +266,7 @@ public partial class NodeDateTimeData : NodeData
     }
 
     [YamlConstructor]
-    internal NodeDateTimeData() { }
+    private NodeDateTimeData() { }
 
     [YamlIgnore]
     [IgnoreMember]
@@ -314,7 +297,7 @@ public partial class NodeDateTimeData : NodeData
 public partial class NodeEnumData : NodeData
 {
     [YamlConstructor]
-    internal NodeEnumData() { }
+    private NodeEnumData() { }
 
     [SetsRequiredMembers]
     public NodeEnumData(IEnumerable<string> values)
@@ -322,10 +305,9 @@ public partial class NodeEnumData : NodeData
         Values = new HashSet<string>(values, StringComparer.OrdinalIgnoreCase);
     }
 
-    [SetsRequiredMembers]
-    public NodeEnumData(Type enumType)
+    public static NodeEnumData FromEnum<T>() where T : struct, Enum
     {
-        Values = new HashSet<string>(Enum.GetNames(enumType), StringComparer.OrdinalIgnoreCase);
+        return new NodeEnumData(Enum.GetValues<T>().Select(t => t.ToFriendlyString()));
     }
 
     [YamlIgnore]
@@ -334,7 +316,16 @@ public partial class NodeEnumData : NodeData
 
     [YamlMember("values")]
     [Key(3)]
-    public required ISet<string> Values { get; set; }
+    public required ISet<string> Values
+    {
+        get;
+        set
+        {
+            if (value.Count == 0) throw new ArgumentException("Enum values cannot be empty.", nameof(Values));
+            if (Value?.ToString() is not { } previousValue || !value.Contains(previousValue)) Value = value.First();
+            field = value;
+        }
+    }
 
     public override object ConvertValue(object? value)
     {
@@ -355,7 +346,7 @@ public partial class NodeEnumerableData : NodeData
     }
 
     [YamlConstructor]
-    internal NodeEnumerableData() { }
+    private NodeEnumerableData() { }
 
     [YamlIgnore]
     [IgnoreMember]
@@ -395,7 +386,7 @@ public partial class NodeDictionaryData : NodeData
     }
 
     [YamlConstructor]
-    internal NodeDictionaryData() { }
+    private NodeDictionaryData() { }
 
     [YamlIgnore]
     [IgnoreMember]
@@ -418,7 +409,7 @@ public partial class NodeStreamData : NodeData
     }
 
     [YamlConstructor]
-    internal NodeStreamData() { }
+    private NodeStreamData() { }
 
     [YamlIgnore]
     [IgnoreMember]
@@ -430,7 +421,7 @@ public partial class NodeStreamData : NodeData
         {
             byte[] byteArray => new MemoryStream(byteArray),
             Memory<byte> memory => new MemoryStream(memory.ToArray()),
-            string str => new MemoryStream(Convert.FromBase64String(str)),
+            string str => new MemoryStream(Encoding.UTF8.GetBytes(str)),
             Stream stream => stream,
             _ => throw new FormatException("Value is not a byte array, nor convertible to a byte array.")
         };

@@ -3,8 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ail="clr-namespace:AsyncImageLoader;assembly=AsyncImageLoader.Avalonia"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:md="clr-namespace:Nodis.Frontend.Views.Markdown" xmlns:suki="https://github.com/kikipoulet/SukiUI"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:suki="https://github.com/kikipoulet/SukiUI"
     xmlns:v="clr-namespace:Nodis.Frontend.Views" xmlns:vm="clr-namespace:Nodis.Frontend.ViewModels"
     d:DesignHeight="450" d:DesignWidth="800"
     x:DataType="vm:MarketplacePageViewModel" x:TypeArguments="vm:MarketplacePageViewModel"
@@ -85,7 +84,7 @@
                 <ScrollViewer
                     Grid.Row="0" HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto">
-                    <md:MarkdownViewer Margin="5,0" Markdown="{Binding SelectedNode.ReadmeMarkdown.Value, FallbackValue={x:Null}}"/>
+                    <v:MarkdownViewer Margin="5,0" Markdown="{Binding SelectedNode.ReadmeMarkdown.Value, FallbackValue={x:Null}}"/>
                 </ScrollViewer>
 
                 <Border Grid.Row="1" Background="{DynamicResource SukiControlBorderBrush}"/>

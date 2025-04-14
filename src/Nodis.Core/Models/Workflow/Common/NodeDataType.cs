@@ -6,22 +6,22 @@ public enum NodeDataType
 {
     [EnumMember(Value = "any")]
     Object,
-    [EnumMember(Value = "bool")]
+    [EnumMember(Value = "boolean")]
     Boolean,
-    [EnumMember(Value = "int")]
+    [EnumMember(Value = "integer")]
     Int64,
-    [EnumMember(Value = "float")]
+    [EnumMember(Value = "decimal")]
     Double,
-    [EnumMember(Value = "str")]
+    [EnumMember(Value = "text")]
     String,
     [EnumMember(Value = "datetime")]
     DateTime,
     [EnumMember(Value = "enum")]
     Enum,
-    [EnumMember(Value = "seq")]
+    [EnumMember(Value = "sequence")]
     Enumerable,
-    [EnumMember(Value = "map")]
+    [EnumMember(Value = "dictionary")]
     Dictionary,
-    [EnumMember(Value = "bin")]
+    [EnumMember(Value = "binary")]
     Stream
 }

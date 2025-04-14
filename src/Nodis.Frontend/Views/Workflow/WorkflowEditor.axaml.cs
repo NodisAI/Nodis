@@ -6,7 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Nodis.Frontend.Extensions;
 using ObservableCollections;
 
-namespace Nodis.Frontend.Views.Workflow;
+namespace Nodis.Frontend.Views;
 
 public partial class WorkflowEditor : UserControl
 {
@@ -157,7 +157,7 @@ public partial class WorkflowEditor : UserControl
     {
         var scaleX = scaleTransform.ScaleX;
         var scaleY = scaleTransform.ScaleY;
-        var (x, y) = NodeCanvas.TranslatePoint(default, GridBorder) ?? default;
+        var (x, y) = VisualExtensions.TranslatePoint(NodeCanvas, default, GridBorder) ?? default;
 
         gridDrawingBrush.DestinationRect = new RelativeRect(
             x,
@@ -299,12 +299,12 @@ public partial class WorkflowEditor : UserControl
 
         void UpdatePreviewConnectionPath(Color startColor, Color endColor, Point startPoint, Point endPoint)
         {
-            var gradientStops = PreviewConnectionPath.Stroke.To<LinearGradientBrush>()!.GradientStops;
+            var gradientStops = CastExtension.To<LinearGradientBrush>(PreviewConnectionPath.Stroke)!.GradientStops;
             gradientStops[0].Color = startColor;
             gradientStops[1].Color = endColor;
 
             var midPointX = startPoint.X / 2 + endPoint.X / 2;
-            var pathFigure = PreviewConnectionPath.Data.To<PathGeometry>()!.Figures![0].To<PathFigure>();
+            var pathFigure = CastExtension.To<PathGeometry>(PreviewConnectionPath.Data)!.Figures![0].To<PathFigure>();
             pathFigure.StartPoint = startPoint;
             var bezierSegment = pathFigure.Segments![0].To<BezierSegment>();
             bezierSegment.Point1 = new Point(midPointX, startPoint.Y);

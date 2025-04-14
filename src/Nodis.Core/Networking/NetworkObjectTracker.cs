@@ -64,6 +64,13 @@ internal class NetworkObjectTracker(object target)
 
     private IReadOnlyDictionary<string, PropertyInfo>? trackedProperties;
 
+    ~NetworkObjectTracker()
+    {
+        if (Id == Guid.Empty) return;
+        if (!TrackingObjects.TryRemove(Id, out _)) return;
+        if (target is INotifyPropertyChanged notifyPropertyChanged) notifyPropertyChanged.PropertyChanged -= HandleTargetPropertyChanged;
+    }
+
     private void Register()
     {
         if (Id == Guid.Empty)
@@ -86,24 +93,23 @@ internal class NetworkObjectTracker(object target)
             TrackedPropertiesCache.TryAdd(type, trackedProperties);
         }
 
-        if (target is INotifyPropertyChanged propertyChanged)
-        {
-            propertyChanged.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName == null ||
-                    !trackedProperties.TryGetValue(e.PropertyName, out var propertyInfo)) return;
-                Hub.SendMessageAsync(new ObjectSynchronizationPropertyMessage
-                {
-                    ObjectId = Id,
-                    Version = Version,
-                    // Properties = new Dictionary<string, object>
-                    // {
-                    //     [e.PropertyName] = propertyInfo.GetValue(target)
-                    // }
-                });
-            };
-        }
+        if (target is INotifyPropertyChanged notifyPropertyChanged) notifyPropertyChanged.PropertyChanged += HandleTargetPropertyChanged;
 
         // todo: collections
+    }
+
+    private void HandleTargetPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == null || trackedProperties?.TryGetValue(args.PropertyName, out var propertyInfo) is not true) return;
+        Hub.SendMessageAsync(
+            new ObjectSynchronizationPropertyMessage
+            {
+                ObjectId = Id,
+                Version = Version,
+                // Properties = new Dictionary<string, object>
+                // {
+                //     [args.PropertyName] = propertyInfo.GetValue(target)
+                // }
+            });
     }
 }

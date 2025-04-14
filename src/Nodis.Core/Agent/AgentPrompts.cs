@@ -69,15 +69,15 @@ public static class AgentPrompts
 
             # Data types
             - `any`: can be converted between any type
-            - `bool`: true or false
-            - `int`: 64-bit signed integer
-            - `float`: 64-bit floating-point number
-            - `str`: UTF-8 string
+            - `boolean`: true or false
+            - `integer`: 64-bit signed integer
+            - `decimal`: 64-bit floating-point number
+            - `text`: UTF-8 string
             - `datetime`: Date and time in ISO 8601 format
-            - `enum`: a set of case-insensitive `str`, can be converted between any type
-            - `seq`: a list of items
-            - `map`: an unordered key-value map, key is `str`, value is `any`
-            - `bin`: a byte array, can be converted between Base64 `str`
+            - `enum`: similar to text, but holds a set of case-insensitive text as values
+            - `sequence`: list of any type
+            - `dictionary`: unordered key-value dictionary, key is text and value is any type
+            - `binary`: binary stream
             """);
 
         if (options.EnableBuiltInNodes)

@@ -21,12 +21,12 @@ public abstract partial class NodeMember : ObservableObject
     public Guid NetworkObjectId
     {
         get => tracker.Id;
-        internal set => tracker.Id = value;
+        protected set => tracker.Id = value;
     }
 
     [YamlMember("id")]
     [Key(1)]
-    public int Id { get; internal set; }
+    public ulong Id { get; internal set; }
 
     [YamlMember("name")]
     [Key(2)]

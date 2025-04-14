@@ -1,4 +1,6 @@
-﻿using Avalonia;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Nodis.Backend.Services;
 using Nodis.Core.Interfaces;
@@ -18,7 +20,17 @@ internal static class Program
 
         ServiceLocator.Build(x => x
             .AddHttpClient()
-            .AddSingleton<YamlSerializerOptions>(_ => new YamlSerializerOptions
+            .AddSingleton(new JsonSerializerOptions
+            {
+                NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                Converters =
+                {
+                    new JsonStringEnumConverter()
+                },
+                AllowTrailingCommas = true
+            })
+            .AddSingleton(new YamlSerializerOptions
             {
                 Resolver = CompositeResolver.Create(
                     [

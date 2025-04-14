@@ -1,9 +1,9 @@
 ﻿<Styles
     xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ip="https://github.com/MahApps/IconPacks.Avalonia" xmlns:mwf="using:Nodis.Core.Models.Workflow"
-    xmlns:vc="using:Nodis.Frontend.ValueConverters" xmlns:vwf="using:Nodis.Frontend.Views.Workflow">
+    xmlns:v="clr-namespace:Nodis.Frontend.Views" xmlns:vc="using:Nodis.Frontend.ValueConverters">
     <Design.PreviewWith>
-        <vwf:NodeItem/>
+        <v:NodeItem/>
     </Design.PreviewWith>
 
     <Style Selector="Path.NodePin">
@@ -26,7 +26,7 @@
         <Setter Property="CornerRadius" Value="6"/>
     </Style>
 
-    <Style Selector="vwf|NodeItem">
+    <Style Selector="v|NodeItem">
         <Style.Resources>
             <vc:NodeStatusToColorConverter x:Key="StatusToColorConverter"/>
         </Style.Resources>
@@ -44,7 +44,7 @@
                         <SolidColorBrush Opacity="0.75" Color="{DynamicResource SukiGlassCardOpaqueBackground}"/>
                     </Border.Background>
 
-                    <Grid RowDefinitions="32,5,Auto,Auto">
+                    <Grid RowDefinitions="32,5,Auto,Auto,Auto">
                         <DockPanel Grid.Row="0" LastChildFill="True">
                             <Border
                                 x:Name="PART_StatusIndicator" DockPanel.Dock="Left"
@@ -77,7 +77,7 @@
                                         <ContextMenu ItemsSource="{Binding ContextMenuItems, RelativeSource={RelativeSource TemplatedParent}}">
                                             <ContextMenu.ItemContainerTheme>
                                                 <ControlTheme
-                                                    x:DataType="vwf:WorkflowNodeMenuFlyoutItem"
+                                                    x:DataType="v:WorkflowNodeMenuFlyoutItem"
                                                     BasedOn="{StaticResource SukiMenuItemStyle}"
                                                     TargetType="MenuItem">
                                                     <Setter Property="Header" Value="{Binding Header}"/>
@@ -152,7 +152,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <DataTemplate.DataType>
-                                                <x:Type x:TypeArguments="mwf:NodeDataInputPin" TypeName="vwf:NodePinWrapper"/>
+                                                <x:Type x:TypeArguments="mwf:NodeDataInputPin" TypeName="v:NodePinWrapper"/>
                                             </DataTemplate.DataType>
                                             <Panel x:Name="PART_DataInputPin" IsVisible="{Binding Pin.IsVisible}">
                                                 <Panel
@@ -173,14 +173,14 @@
                                                         Text="{Binding TypedPin.Name}"/>
                                                 </Panel>
 
-                                                <vwf:NodeDataInput Margin="25,25,0,0" Data="{Binding TypedPin.Data}">
-                                                    <vwf:NodeDataInput.IsVisible>
+                                                <v:NodeDataInput Margin="25,25,0,0" Data="{Binding TypedPin.Data}">
+                                                    <v:NodeDataInput.IsVisible>
                                                         <MultiBinding Converter="{x:Static BoolConverters.And}">
                                                             <Binding Converter="{x:Static ObjectConverters.IsNull}" Path="TypedPin.Connection"/>
                                                             <Binding Path="TypedPin.CanUserInput"/>
                                                         </MultiBinding>
-                                                    </vwf:NodeDataInput.IsVisible>
-                                                </vwf:NodeDataInput>
+                                                    </v:NodeDataInput.IsVisible>
+                                                </v:NodeDataInput>
                                             </Panel>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
@@ -192,7 +192,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <DataTemplate.DataType>
-                                                <x:Type x:TypeArguments="mwf:NodeControlOutputPin" TypeName="vwf:NodePinWrapper"/>
+                                                <x:Type x:TypeArguments="mwf:NodeControlOutputPin" TypeName="v:NodePinWrapper"/>
                                             </DataTemplate.DataType>
                                             <Panel
                                                 x:Name="PART_ControlOutputPin" Height="20"
@@ -221,7 +221,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <DataTemplate.DataType>
-                                                <x:Type x:TypeArguments="mwf:NodeDataOutputPin" TypeName="vwf:NodePinWrapper"/>
+                                                <x:Type x:TypeArguments="mwf:NodeDataOutputPin" TypeName="v:NodePinWrapper"/>
                                             </DataTemplate.DataType>
                                             <Panel
                                                 x:Name="PART_DataOutputPin" Height="20"
@@ -255,11 +255,14 @@
                                 <DataTemplate DataType="mwf:NodeProperty">
                                     <Panel Margin="0,0,0,8">
                                         <TextBlock Classes="h5" Text="{Binding Name}"/>
-                                        <vwf:NodeDataInput Margin="0,16,0,0" Data="{Binding Data}"/>
+                                        <v:NodeDataInput Margin="0,16,0,0" Data="{Binding Data}"/>
                                     </Panel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+
+                        <!--  TODO  -->
+                        <!-- <ContentPresenter Grid.Row="4" Content="{Binding Node, RelativeSource={RelativeSource TemplatedParent}}"/> -->
                     </Grid>
                 </Border>
             </ControlTemplate>

@@ -20,7 +20,7 @@ public abstract partial class NodePin(string name) : NodeMember(name)
 [YamlObject]
 [MessagePackObject(AllowPrivate = true)]
 [method: YamlConstructor]
-public partial class NodeControlOutputPin(string name) : NodePin(name)
+public partial class NodeControlOutputPin(string name = "") : NodePin(name)
 {
     [YamlIgnore]
     [IgnoreMember]
@@ -56,7 +56,7 @@ public partial class NodeControlOutputPin(string name) : NodePin(name)
 [YamlObject]
 [MessagePackObject(AllowPrivate = true)]
 [method: YamlConstructor]
-public partial class NodeControlInputPin(string name) : NodePin(name)
+public partial class NodeControlInputPin(string name = "") : NodePin(name)
 {
     [YamlIgnore]
     [IgnoreMember]
@@ -92,7 +92,7 @@ public partial class NodeControlInputPin(string name) : NodePin(name)
     /// <summary>
     /// MessagePack constructor for deserialization.
     /// </summary>
-    public NodeControlInputPin() : this(string.Empty) { }
+    private NodeControlInputPin() : this(string.Empty) { }
 
     protected virtual void HandleConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -111,11 +111,22 @@ public abstract class NodeDataPin(string name, NodeData data) : NodePin(name)
 [YamlObject]
 [MessagePackObject(AllowPrivate = true)]
 [method: YamlConstructor]
-public partial class NodeDataOutputPin(string name, NodeData? data) : NodeDataPin(name, data ?? new NodeAnyData())
+public partial class NodeDataOutputPin(string name, NodeData data) : NodeDataPin(name, data)
 {
     [YamlIgnore]
     [IgnoreMember]
     public override bool IsConnected => connections.Count > 0;
+
+    /// <summary>
+    /// Equivalent to Data.Value
+    /// </summary>
+    [YamlIgnore]
+    [IgnoreMember]
+    public object? Value
+    {
+        get => Data.Value;
+        set => Data.Value = value;
+    }
 
     [IgnoreMember]
     private readonly HashSet<NodeDataInputPin> connections = [];
@@ -123,7 +134,7 @@ public partial class NodeDataOutputPin(string name, NodeData? data) : NodeDataPi
     /// <summary>
     /// MessagePack constructor for deserialization.
     /// </summary>
-    public NodeDataOutputPin() : this(string.Empty, null) { }
+    private NodeDataOutputPin() : this(string.Empty, NodeAnyData.Shared) { }
 
     public bool AddConnection(NodeDataInputPin pin)
     {
@@ -170,9 +181,10 @@ public partial class NodeDataInputPin : NodeDataPin
         }
     }
 
-    [YamlIgnore]
-    [IgnoreMember]
-    public bool CanUserInput { get; }
+    [ObservableProperty]
+    [YamlMember("can_input")]
+    [Key(6)]
+    public partial bool CanUserInput { get; set; } = true;
 
     [YamlIgnore]
     [IgnoreMember]
@@ -196,16 +208,15 @@ public partial class NodeDataInputPin : NodeDataPin
     }
 
     [YamlConstructor]
-    public NodeDataInputPin(string name, NodeData? data) : base(name, data ?? new NodeAnyData())
+    public NodeDataInputPin(string name, NodeData data) : base(name, data)
     {
-        CanUserInput = data != null;
         Data.PropertyChanged += HandleDataPropertyChanged;
     }
 
     /// <summary>
     /// MessagePack constructor for deserialization.
     /// </summary>
-    public NodeDataInputPin() : this(string.Empty, null) { }
+    private NodeDataInputPin() : this(string.Empty, NodeAnyData.Shared) { }
 
     protected virtual void HandleDataPropertyChanged(object? sender, PropertyChangedEventArgs e) =>
         OnPropertyChanged(nameof(Value)); // notify Value property change

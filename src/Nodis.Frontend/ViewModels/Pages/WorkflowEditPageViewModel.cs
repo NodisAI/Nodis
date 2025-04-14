@@ -26,13 +26,13 @@ public partial class WorkflowEditPageViewModel(
         [
             new NodeTemplate("Condition", PackIconEvaIconsKind.CheckmarkCircle, () => new ConditionNode()),
             new NodeTemplate("Delay", PackIconEvaIconsKind.Clock, () => new DelayNode()),
-            new NodeTemplate("Display", PackIconEvaIconsKind.Browser, () => new DisplayNode()),
             new NodeTemplate("File", PackIconEvaIconsKind.File, () => new FileNode()),
             new NodeTemplate("HTTP Request", PackIconEvaIconsKind.Globe, () => new HttpRequestNode()),
             new NodeTemplate("Loop", PackIconEvaIconsKind.Refresh, () => new LoopNode()),
-            new NodeTemplate("Variable", PackIconEvaIconsKind.FileText, () => new VariableNode()),
+            new NodeTemplate("Preview", PackIconEvaIconsKind.Eye, () => new PreviewNode()),
             new NodeTemplate("Serializer", PackIconEvaIconsKind.FileText, () => new SerializerNode()),
             new NodeTemplate("Trigger", PackIconEvaIconsKind.Bell, () => new TriggerNode()),
+            new NodeTemplate("Variable", PackIconEvaIconsKind.Hash, () => new VariableNode()),
         ]));
 
         var packages = await environmentManager.EnumeratePackagesAsync();

@@ -1,6 +1,9 @@
 ﻿using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MessagePack;
+using Nodis.Core.Extensions;
+using Nodis.Core.Networking;
 using VYaml.Annotations;
 using VYaml.Serialization;
 
@@ -8,23 +11,38 @@ namespace Nodis.Core.Models.Workflow;
 
 #pragma warning disable CS0657
 [YamlObject]
+// [MessagePackObject(AllowPrivate = true)]
 public partial class WorkflowContext : ObservableObject
 {
     public delegate void NodeChangedEventHandler(Node node);
     public delegate void ConnectionChangedEventHandler(NodePortConnection connection);
 
+    [IgnoreMember]
+    private readonly NetworkObjectTracker tracker;
+
     [YamlIgnore]
+    [Key(0)]
+    public Guid NetworkObjectId
+    {
+        get => tracker.Id;
+        internal set => tracker.Id = value;
+    }
+
+    [YamlIgnore]
+    [IgnoreMember]
     public StartNode StartNode { get; }
 
     [YamlMember("start_node_x")]
-    public double X
+    [IgnoreMember]
+    public double StartNodeX
     {
         get => StartNode.X;
         set => StartNode.X = value;
     }
 
     [YamlMember("start_node_y")]
-    public double Y
+    [IgnoreMember]
+    public double StartNodeY
     {
         get => StartNode.Y;
         set => StartNode.Y = value;
@@ -43,20 +61,23 @@ public partial class WorkflowContext : ObservableObject
     public IReadOnlySet<NodePortConnection> Connections => connections;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanStart))]
+    [NotifyPropertyChangedFor(nameof(CanStop))]
     [YamlIgnore]
-    public partial NodeStates State { get; private set; }
+    public partial NodeStates State { get; internal set; }
 
     public event NodeChangedEventHandler? NodeAdded;
     public event NodeChangedEventHandler? NodeRemoved;
     public event ConnectionChangedEventHandler? ConnectionAdded;
     public event ConnectionChangedEventHandler? ConnectionRemoved;
 
-    private readonly HashSet<Node> nodes = [];
-    private readonly Dictionary<int, Node> nodesMap = [];
-    private readonly HashSet<NodePortConnection> connections = [];
+    [IgnoreMember] private readonly HashSet<Node> nodes = [];
+    [IgnoreMember] private readonly Dictionary<ulong, Node> nodesMap = [];
+    [IgnoreMember] private readonly HashSet<NodePortConnection> connections = [];
 
     public WorkflowContext()
     {
+        tracker = new NetworkObjectTracker(this);
         StartNode = new StartNode { Owner = this };
         nodes.Add(StartNode);
         nodesMap.Add(StartNode.Id, StartNode);
@@ -66,25 +87,26 @@ public partial class WorkflowContext : ObservableObject
     private WorkflowContext(
         IList<BuiltInNode> builtInNodes,
         // IList<UserNode> userNodes,
-        IReadOnlySet<NodePortConnection> connections)
+        IReadOnlySet<NodePortConnection> connections) : this()
     {
         nodes.UnionWith(builtInNodes);
+        nodesMap.AddRange(builtInNodes.Select(n => new KeyValuePair<ulong, Node>(n.Id, n)));
         // nodes.UnionWith(userNodes);
         foreach (var node in nodes)
         {
             node.Owner = this;
             node.PropertyChanged += HandleNodeOnPropertyChanged;
         }
-        StartNode = nodes.OfType<StartNode>().Single();
-        nodesMap = nodes.ToDictionary(n => n.Id);
         foreach (var connection in connections) AddConnection(connection);
     }
 
     [YamlIgnore]
+    [IgnoreMember]
     public bool CanStart => State != NodeStates.Running;
 
     [RelayCommand(CanExecute = nameof(CanStart))]
     [property: YamlIgnore]
+    [property: IgnoreMember]
     private void Start()
     {
         foreach (var node in nodes) node.Reset();
@@ -92,10 +114,12 @@ public partial class WorkflowContext : ObservableObject
     }
 
     [YamlIgnore]
+    [IgnoreMember]
     public bool CanStop => State == NodeStates.Running;
 
     [RelayCommand(CanExecute = nameof(CanStop))]
     [property: YamlIgnore]
+    [property: IgnoreMember]
     private void Stop()
     {
         foreach (var node in nodes) node.Stop();
@@ -138,7 +162,7 @@ public partial class WorkflowContext : ObservableObject
         }
     }
 
-    public void AddConnection(int outputNodeId, int outputPinId, int inputNodeId, int inputPinId) =>
+    public void AddConnection(ulong outputNodeId, ulong outputPinId, ulong inputNodeId, ulong inputPinId) =>
         AddConnection(new NodePortConnection(outputNodeId, outputPinId, inputNodeId, inputPinId));
 
     public void AddConnection(NodePortConnection connection)

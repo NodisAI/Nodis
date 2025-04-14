@@ -1,19 +1,27 @@
 ﻿using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
+using MessagePack;
+using Nodis.Core.Networking;
 using ObservableCollections;
 
 namespace Nodis.Core.Models.Workflow;
 
-public class NodePropertyCollection<T> : ObservableList<T> where T : NodeMember
+public class NodePropertyList<T> : ObservableList<T> where T : NodeMember
 {
+    [IgnoreMember]
+    internal readonly NetworkObjectTracker tracker;
+
     [field: AllowNull, MaybeNull]
+    [IgnoreMember]
     public NotifyCollectionChangedSynchronizedViewList<T> Bindable =>
         field ??= this.ToNotifyCollectionChanged(SynchronizationContextCollectionEventDispatcher.Current);
 
+    [IgnoreMember]
     private readonly Node owner;
 
-    public NodePropertyCollection(Node owner)
+    public NodePropertyList(Node owner)
     {
+        tracker = new NetworkObjectTracker(this);
         this.owner = owner;
         CollectionChanged += OnCollectionChanged;
     }
@@ -68,7 +76,6 @@ public class NodePropertyCollection<T> : ObservableList<T> where T : NodeMember
         if (property.Owner != null) throw new InvalidOperationException("Property already has an owner");
         property.Id = property.Id switch
         {
-            < 0 => throw new InvalidOperationException("Property id must be greater than or equal to 0"),
             0 => owner.GetAvailableMemberId(),
             _ => ContainsId(owner.Id) ? throw new InvalidOperationException($"Property with id '{property.Id}' already exists") : property.Id
         };
@@ -82,17 +89,9 @@ public class NodePropertyCollection<T> : ObservableList<T> where T : NodeMember
         property.Id = 0;
     }
 
-    #region Implementation
-
-    public IEnumerable<string> Keys => this.Select<T, string>(nodeMember => nodeMember.Name);
-
-    public IEnumerable<T> Values => this;
-
-    public bool ContainsId(int id) => this.Any(nodeMember => nodeMember.Id == id);
+    public bool ContainsId(ulong id) => this.Any(nodeMember => nodeMember.Id == id);
 
     public bool ContainsName(string name) => this.Any(nodeMember => nodeMember.Name == name);
 
-    public T this[string key] => this.FirstOrDefault(p => p.Name == key) ?? throw new KeyNotFoundException($"Key '{key}' not found");
-
-    #endregion
+    public T this[string name] => this.FirstOrDefault(p => p.Name == name) ?? throw new KeyNotFoundException($"Object of name '{name}' not found");
 }

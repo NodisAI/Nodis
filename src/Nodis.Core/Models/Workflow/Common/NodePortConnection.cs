@@ -6,31 +6,28 @@ using VYaml.Serialization;
 namespace Nodis.Core.Models.Workflow;
 
 [YamlObject]
-public partial record NodePortConnection(int OutputNodeId, int OutputPinId, int InputNodeId, int InputPinId);
+public readonly partial record struct NodePortConnection(ulong OutputNodeId, ulong OutputPinId, ulong InputNodeId, ulong InputPinId);
 
 /// <summary>
 /// Serializes and deserializes a <see cref="NodePortConnection"/> as a 4-element array.
 /// </summary>
 public class WorkflowNodePortConnectionYamlFormatter : IYamlFormatter<NodePortConnection>
 {
-    public void Serialize(ref Utf8YamlEmitter emitter, NodePortConnection value, YamlSerializationContext context)
+    public void Serialize(ref Utf8YamlEmitter emitter, in NodePortConnection value, YamlSerializationContext context)
     {
-        emitter.BeginSequence();
-        context.Serialize(ref emitter, value.OutputNodeId);
-        context.Serialize(ref emitter, value.OutputPinId);
-        context.Serialize(ref emitter, value.InputNodeId);
-        context.Serialize(ref emitter, value.InputPinId);
-        emitter.EndSequence();
+        emitter.WriteString($"{value.OutputNodeId},{value.OutputPinId},{value.InputNodeId},{value.InputPinId}");
     }
 
     public NodePortConnection Deserialize(ref YamlParser parser, YamlDeserializationContext context)
     {
-        parser.ReadWithVerify(ParseEventType.SequenceStart);
-        var outputNodeId = context.DeserializeWithAlias<int>(ref parser);
-        var outputPinId = context.DeserializeWithAlias<int>(ref parser);
-        var inputNodeId = context.DeserializeWithAlias<int>(ref parser);
-        var inputPinId = context.DeserializeWithAlias<int>(ref parser);
-        parser.ReadWithVerify(ParseEventType.SequenceEnd);
+        var values = parser.ReadScalarAsString();
+        if (string.IsNullOrEmpty(values) ||
+            values.Split(',') is not { Length: 4 } parts ||
+            !ulong.TryParse(parts[0], out var outputNodeId) ||
+            !ulong.TryParse(parts[1], out var outputPinId) ||
+            !ulong.TryParse(parts[2], out var inputNodeId) ||
+            !ulong.TryParse(parts[3], out var inputPinId))
+            throw new YamlParserException(parser.CurrentMark, "Invalid NodePortConnection format.");
 
         return new NodePortConnection(outputNodeId, outputPinId, inputNodeId, inputPinId);
     }

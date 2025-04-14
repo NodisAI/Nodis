@@ -40,7 +40,7 @@ public partial record Checksum(ChecksumType Type, string Value)
 
 public class ChecksumYamlFormatter : IYamlFormatter<Checksum>
 {
-    public void Serialize(ref Utf8YamlEmitter emitter, Checksum value, YamlSerializationContext context)
+    public void Serialize(ref Utf8YamlEmitter emitter, in Checksum value, YamlSerializationContext context)
     {
         emitter.Tag('!' + value.Type.ToFriendlyString());
         context.Serialize(ref emitter, value.Value);

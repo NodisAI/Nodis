@@ -2,7 +2,7 @@
 using Avalonia.Controls.Primitives;
 using Markdig;
 
-namespace Nodis.Frontend.Views.Markdown;
+namespace Nodis.Frontend.Views;
 
 public class MarkdownViewer : TemplatedControl
 {

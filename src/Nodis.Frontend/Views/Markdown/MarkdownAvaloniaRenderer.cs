@@ -8,7 +8,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using AvaloniaDocs = Avalonia.Controls.Documents;
 
-namespace Nodis.Frontend.Views.Markdown;
+namespace Nodis.Frontend.Views;
 
 public class MarkdownAvaloniaRenderer
 {

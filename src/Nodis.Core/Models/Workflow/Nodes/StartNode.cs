@@ -8,6 +8,7 @@ public sealed class StartNode : Node
 
     public StartNode()
     {
+        Id = 1;
         ControlOutputs.Add(new ControlOutputPin());
     }
 

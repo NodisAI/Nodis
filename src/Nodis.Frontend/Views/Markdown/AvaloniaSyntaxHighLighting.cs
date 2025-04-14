@@ -6,7 +6,7 @@ using ColorCode.Common;
 using ColorCode.Parsing;
 using ColorCode.Styling;
 
-namespace Nodis.Frontend.Views.Markdown;
+namespace Nodis.Frontend.Views;
 
 public class AvaloniaSyntaxHighLighting(StyleDictionary? styles = null, ILanguageParser? languageParser = null)
     : CodeColorizerBase(styles, languageParser)

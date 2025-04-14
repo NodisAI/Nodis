@@ -1,4 +1,5 @@
 ﻿using System.Runtime.Serialization;
+using Nodis.Core.Extensions;
 using VYaml.Annotations;
 
 namespace Nodis.Core.Models.Workflow;
@@ -11,24 +12,32 @@ public partial class TriggerNode : BuiltInNode
 
     public TriggerNode()
     {
-        DataInputs.Add(new NodeDataInputPin("type", new NodeEnumData(typeof(TriggerNodeType))));
-        DataInputs.Add(new NodeDataInputPin("interval", new NodeDoubleData(1f))
-        {
-            Description = "Interval in seconds",
-            Condition = new NodePinValueCondition("type", d => d.Value is TriggerNodeType.Timer)
-        });
-        DataInputs.Add(new NodeDataInputPin("hotkey", new NodeStringData
-        {
-            Watermark = "e.g. Ctrl + Shift + I",
-        })
-        {
-            Description = "A global hotkey to trigger the node",
-            Condition = new NodePinValueCondition("type", d => d.Value is TriggerNodeType.Hotkey)
-        });
-        ControlOutputs.Add(new NodeControlOutputPin("then")
-        {
-            Description = "Activates when triggered"
-        });
+        DataInputs.Add(new NodeDataInputPin("type", NodeEnumData.FromEnum<TriggerNodeType>()));
+        DataInputs.Add(
+            new NodeDataInputPin("interval", new NodeDoubleData(1f))
+            {
+                Description = "Interval in seconds",
+                Condition = new NodePinValueCondition(
+                    "type",
+                    d => d.Value?.ToString()?.ToEnum<TriggerNodeType>() is TriggerNodeType.Timer)
+            });
+        DataInputs.Add(
+            new NodeDataInputPin(
+                "hotkey",
+                new NodeStringData
+                {
+                    Watermark = "e.g. Ctrl + Shift + I",
+                })
+            {
+                Description = "A global hotkey to trigger the node",
+                Condition = new NodePinValueCondition("type",
+                    d => d.Value?.ToString()?.ToEnum<TriggerNodeType>() is TriggerNodeType.Hotkey)
+            });
+        ControlOutputs.Add(
+            new NodeControlOutputPin("then")
+            {
+                Description = "Activates when triggered"
+            });
     }
 
     protected override Task ExecuteImplAsync(CancellationToken cancellationToken)

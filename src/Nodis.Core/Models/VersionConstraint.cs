@@ -337,7 +337,7 @@ public readonly partial record struct NameAndVersionConstraints(string Name, Ver
 
 public class NameAndVersionConstraintsYamlFormatter : IYamlFormatter<NameAndVersionConstraints>
 {
-    public void Serialize(ref Utf8YamlEmitter emitter, NameAndVersionConstraints value, YamlSerializationContext context)
+    public void Serialize(ref Utf8YamlEmitter emitter, in NameAndVersionConstraints value, YamlSerializationContext context)
     {
         context.Serialize(ref emitter, value.ToString());
     }

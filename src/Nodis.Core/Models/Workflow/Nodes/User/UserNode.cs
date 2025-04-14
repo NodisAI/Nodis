@@ -7,7 +7,7 @@ namespace Nodis.Core.Models.Workflow;
 /// <summary>
 /// Defines a user-defined node in a workflow.
 /// </summary>
-public abstract partial class UserNode(int id, string name) : Node(id)
+public abstract partial class UserNode(string name) : Node
 {
     [YamlMember("name")]
     public override string Name { get; } = name;

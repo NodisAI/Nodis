@@ -1,7 +1,7 @@
 ﻿using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 
-namespace Nodis.Frontend.Views.Workflow;
+namespace Nodis.Frontend.Views;
 
 public class NodeDataInput : TemplatedControl
 {

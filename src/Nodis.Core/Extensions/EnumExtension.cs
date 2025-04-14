@@ -6,7 +6,7 @@ namespace Nodis.Core.Extensions;
 
 public static class EnumExtension
 {
-    public static string ToFriendlyString<T>(this T value) where T : Enum
+    public static string ToFriendlyString<T>(this T value) where T : struct, Enum
     {
         var member = value.GetType().GetMember(value.ToString()).FirstOrDefault();
         if (member == null) return value.ToString();

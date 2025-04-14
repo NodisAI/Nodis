@@ -2,7 +2,7 @@
 using Avalonia.Controls.Documents;
 using Avalonia.Input;
 
-namespace Nodis.Frontend.Views.Markdown;
+namespace Nodis.Frontend.Views;
 
 public class InlineHyperlink : InlineUIContainer
 {

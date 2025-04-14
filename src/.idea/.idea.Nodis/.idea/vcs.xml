@@ -2,6 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../3rd/MessagePack-CSharp" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../3rd/SukiUI" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../3rd/VYaml" vcs="Git" />
   </component>

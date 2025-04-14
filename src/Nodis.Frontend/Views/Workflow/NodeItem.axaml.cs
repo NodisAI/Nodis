@@ -15,7 +15,7 @@ using Nodis.Frontend.Extensions;
 using ObservableCollections;
 using SukiUI.ColorTheme;
 
-namespace Nodis.Frontend.Views.Workflow;
+namespace Nodis.Frontend.Views;
 
 public enum NodeItemPortEventType
 {
@@ -155,7 +155,7 @@ public partial class NodeItem(Node node) : TemplatedControl
                 "Remove",
                 PackIconEvaIconsKind.Trash2,
                 RemoveNodeCommand,
-                this,
+                node,
                 NotificationType.Error);
 
             if (node is VariableNode variableNode)
@@ -165,7 +165,7 @@ public partial class NodeItem(Node node) : TemplatedControl
                 {
                     var dataType = VariableNode.SupportedDataTypes[i];
                     yield return new WorkflowNodeMenuFlyoutItem(
-                        $"Add {dataType}",
+                        $"Add {dataType.ToFriendlyString()}",
                         dataType switch
                         {
                             NodeDataType.String => PackIconEvaIconsKind.Text,
