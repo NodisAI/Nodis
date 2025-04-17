@@ -1,7 +1,8 @@
 ﻿<Styles
     xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ip="https://github.com/MahApps/IconPacks.Avalonia" xmlns:mwf="using:Nodis.Core.Models.Workflow"
-    xmlns:v="clr-namespace:Nodis.Frontend.Views" xmlns:vc="using:Nodis.Frontend.ValueConverters">
+    xmlns:suki="https://github.com/kikipoulet/SukiUI" xmlns:v="clr-namespace:Nodis.Frontend.Views"
+    xmlns:vc="using:Nodis.Frontend.ValueConverters">
     <Design.PreviewWith>
         <v:NodeItem/>
     </Design.PreviewWith>
@@ -45,6 +46,8 @@
                     </Border.Background>
 
                     <Grid RowDefinitions="32,5,Auto,Auto,Auto">
+                        <suki:SukiBackground Grid.RowSpan="5"/>
+
                         <DockPanel Grid.Row="0" LastChildFill="True">
                             <Border
                                 x:Name="PART_StatusIndicator" DockPanel.Dock="Left"

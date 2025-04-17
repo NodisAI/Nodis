@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.System.JobObjects;
+using Nodis.Backend.Interfaces;
 using Nodis.Core.Extensions;
 using Nodis.Core.Interfaces;
 using Nodis.Core.Models;
@@ -18,7 +18,7 @@ public class WindowsNativeInterop : INativeInterop
     /// <summary>
     /// we use MSYS2's bash as the default shell
     /// </summary>
-    private string BashExecutablePath { get; } = Path.Combine(Environment.CurrentDirectory, "PortableGit", "bin", "bash.exe");
+    private string BashExecutablePath { get; } = Path.Combine(Environment.CurrentDirectory, "msys2", "bin", "bash.exe");
 
     [return: NotNullIfNotNull(nameof(path))]
     private static string? GetUnixPath(string? path)
@@ -43,7 +43,6 @@ public class WindowsNativeInterop : INativeInterop
     {
         var startInfo = new ProcessStartInfo
         {
-            FileName = options.Type == ProcessStartType.Bash ? BashExecutablePath : options.Executable,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -51,24 +50,30 @@ public class WindowsNativeInterop : INativeInterop
             CreateNoWindow = true,
             WorkingDirectory = options.WorkingDirectory
         };
-
-        if (options.Type == ProcessStartType.Normal)
-        {
-            startInfo.ArgumentList.AddRange(options.Arguments);
-            foreach (var (key, value) in options.EnvironmentVariables) startInfo.EnvironmentVariables[key] = value;
-        }
-        else
-        {
-            options.EnvironmentVariables["OSTYPE"] = "msys";
-            options.EnvironmentVariables["WORKING_DIR"] = GetUnixPath(options.WorkingDirectory) ?? "~";
-            options.EnvironmentVariables["CACHE_DIR"] = GetUnixPath(
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), nameof(Core), "Cache", "MinGW"));
-        }
-
         var process = new Process { StartInfo = startInfo };
-        return options.Type == ProcessStartType.Normal ?
-            new NormalProcess(process, options) :
-            new BashProcess(process, options);
+
+        switch (options)
+        {
+            case NormalProcessCreationOptions normal:
+            {
+                startInfo.FileName = normal.Command;
+                if (normal.Arguments != null) startInfo.ArgumentList.AddRange(normal.Arguments);
+                foreach (var (key, value) in options.EnvironmentVariables) startInfo.EnvironmentVariables[key] = value;
+                return new NormalProcess(process, normal);
+            }
+            case BashProcessCreationOptions bash:
+            {
+                startInfo.FileName = BashExecutablePath;
+                options.EnvironmentVariables["OSTYPE"] = "msys2";
+                options.EnvironmentVariables["WORKING_DIR"] = GetUnixPath(options.WorkingDirectory) ?? "~";
+                options.EnvironmentVariables["CACHE_DIR"] = GetUnixPath(Path.Combine(IEnvironmentManager.CacheFolderPath, "msys2"));
+                return new BashProcess(process, bash);
+            }
+            default:
+            {
+                throw new NotSupportedException($"Process type {options.GetType()} is not supported");
+            }
+        }
     }
 
     private class NormalProcess(Process process, ProcessCreationOptions options) : IProcess
@@ -77,8 +82,10 @@ public class WindowsNativeInterop : INativeInterop
         protected readonly ProcessCreationOptions options = options;
         private bool isStarted;
 
+        public StreamWriter StandardInput => process.StandardInput;
         public StreamReader StandardOutput => process.StandardOutput;
         public StreamReader StandardError => process.StandardError;
+        public bool HasExited => process.HasExited;
 
         public virtual Task StartAsync(CancellationToken cancellationToken)
         {
@@ -100,11 +107,11 @@ public class WindowsNativeInterop : INativeInterop
 
         public void Kill()
         {
-            process.Kill();
+            process.Kill(true);
         }
     }
 
-    private class BashProcess(Process process, ProcessCreationOptions options) : NormalProcess(process, options)
+    private class BashProcess(Process process, BashProcessCreationOptions bash) : NormalProcess(process, bash)
     {
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
@@ -116,19 +123,13 @@ public class WindowsNativeInterop : INativeInterop
                 await input.WriteLineAsync($"export {key}={value}");
             }
 
-            if (options.Executable is { } scriptPath)
+            foreach (var commandLine in bash.CommandLines)
             {
-                await input.WriteLineAsync($"source {GetUnixPath(scriptPath)} {string.Join(' ', options.Arguments)}");
-            }
-            else
-            {
-                foreach (var argument in options.Arguments)
-                {
-                    await input.WriteLineAsync(argument);
-                }
+                await input.WriteLineAsync(commandLine);
             }
 
-            await input.WriteLineAsync("exit");
+            if (bash.AutoExit) await input.WriteLineAsync("exit");
+            await input.FlushAsync(cancellationToken);
         }
     }
 

@@ -1,9 +1,13 @@
-﻿using System.Buffers;
-using System.Runtime.InteropServices;
+﻿using System.Collections.Concurrent;
+using System.Text.Json;
+using Microsoft.KernelMemory;
+using ModelContextProtocol.Client;
+using ModelContextProtocol.Protocol.Transport;
+using Nodis.Backend.Interfaces;
+using Nodis.Backend.Models.Mcp;
 using Nodis.Core.Extensions;
 using Nodis.Core.Interfaces;
 using Nodis.Core.Models;
-using VYaml.Annotations;
 using VYaml.Serialization;
 
 namespace Nodis.Backend.Services;
@@ -11,58 +15,75 @@ namespace Nodis.Backend.Services;
 public class LocalEnvironmentManager(
     IHttpClientFactory httpClientFactory,
     INativeInterop nativeInterop,
-    YamlSerializerOptions yamlSerializerOptions
+    IKernelMemory kernelMemory,
+    YamlSerializerOptions yamlSerializerOptions,
+    ILoggerFactory loggerFactory
 ) : IEnvironmentManager
 {
-    private static string SourcesFolderPath => Path.Combine(IEnvironmentManager.DataFolderPath, "sources");
-    private static string PackagesFolderPath => Path.Combine(IEnvironmentManager.DataFolderPath, "packages");
+    private const string SourcesFolderName = "sources";
+    private const string BundlesFolderName = "bundles";
+    private const string InstalledBundleMetadataFileName = "metadata.yaml";
+
+    private static string SourcesFolderPath => Path.Combine(IEnvironmentManager.DataFolderPath, SourcesFolderName);
+    private static string BundlesFolderPath => Path.Combine(IEnvironmentManager.DataFolderPath, BundlesFolderName);
 
     private readonly HttpClient httpClient = httpClientFactory.CreateClient("global");
+    private readonly ConcurrentDictionary<Metadata, IProcess> runningRuntimes = new();
 
-    public Task<IEnumerable<Metadata>> EnumerateSourcesAsync() => Task.FromResult(EnumerateSources());
+    public Task<IEnumerable<Metadata>> EnumerateBundleManifestMetadataAsync() => Task.FromResult(EnumerateBundleManifestMetadata());
 
-    private static IEnumerable<Metadata> EnumerateSources()
+    private static IEnumerable<Metadata> EnumerateBundleManifestMetadata()
     {
+        // e.g. $(UserProfile)/nodis/sources/NodesAI/Main/bundles/notion/1.0.0.yaml
         if (!Directory.Exists(SourcesFolderPath)) yield break;
-        foreach (var metadataFilePath in Directory
-                     .EnumerateDirectories(SourcesFolderPath)
-                     .SelectMany(Directory.EnumerateDirectories)
-                     .Select(p => Path.Combine(p, "packages"))
+        foreach (var manifestFilePath in Directory
+                     .EnumerateDirectories(SourcesFolderPath) // $(UserProfile)/nodis/sources/NodesAI
+                     .SelectMany(Directory.EnumerateDirectories) // $(UserProfile)/nodis/sources/NodesAI/Main
+                     .Select(p => Path.Combine(p, BundlesFolderName)) // $(UserProfile)/nodis/sources/NodesAI/Main/bundles
                      .Where(Directory.Exists)
-                     .SelectMany(Directory.EnumerateDirectories)
+                     .SelectMany(Directory.EnumerateDirectories) // $(UserProfile)/nodis/sources/NodesAI/Main/bundles/notion
                      .SelectMany(Directory.EnumerateFiles))
         {
-            if (!SemanticVersion.TryParse(Path.GetFileNameWithoutExtension(metadataFilePath), out var version)) continue;
-            var folderParts = metadataFilePath.Split(Path.DirectorySeparatorChar);
-            if (folderParts[^5].Contains('.') || folderParts[^4].Contains('.')) continue;
+            if (!SemanticVersion.TryParse(Path.GetFileNameWithoutExtension(manifestFilePath), out var version)) continue;
+            var folderParts = manifestFilePath.Split(Path.DirectorySeparatorChar);
             yield return new Metadata($"{folderParts[^5]}.{folderParts[^4]}", folderParts[^2], version);
         }
     }
 
-    public Task<IEnumerable<Metadata>> EnumeratePackagesAsync() => Task.FromResult(EnumeratePackages());
+    public Task<IEnumerable<Metadata>> EnumerateInstalledBundleMetadataAsync() => Task.FromResult(EnumerateInstalledBundleMetadata());
 
-    private static IEnumerable<Metadata> EnumeratePackages()
+    private static IEnumerable<Metadata> EnumerateInstalledBundleMetadata()
     {
-        var indexFilePath = Path.Combine(PackagesFolderPath, "index.yaml");
-        if (!File.Exists(indexFilePath)) yield break;
-        // todo
+        // e.g. $(UserProfile)/nodis/bundles/nodisai.main/notion/1.0.0/metadata.yaml
+        if (!Directory.Exists(BundlesFolderPath)) yield break;
+        foreach (var installedBundlePath in Directory
+                     .EnumerateDirectories(BundlesFolderPath) // $(UserProfile)/nodis/bundles
+                     .SelectMany(Directory.EnumerateDirectories) // $(UserProfile)/nodis/bundles/nodisai.main
+                     .SelectMany(Directory.EnumerateDirectories) // $(UserProfile)/nodis/bundles/nodisai.main/notion
+                     .SelectMany(Directory.EnumerateDirectories) // $(UserProfile)/nodis/bundles/nodisai.main/notion/1.0.0
+                     .Where(p => new FileInfo(Path.Combine(p, InstalledBundleMetadataFileName)) is { Exists: true, Length: > 0 }))
+        {
+            if (!SemanticVersion.TryParse(Path.GetFileNameWithoutExtension(installedBundlePath), out var version)) continue;
+            var folderParts = installedBundlePath.Split(Path.DirectorySeparatorChar);
+            yield return new Metadata(folderParts[^3], folderParts[^2], version);
+        }
     }
 
-    private async static ValueTask<IReadOnlyList<SourceIndexEntry>> LoadSourceIndexEntriesAsync(CancellationToken cancellationToken)
+    private async static ValueTask<IReadOnlyList<SourceListEntry>> LoadSourceListEntriesAsync(CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(SourcesFolderPath);
-        var indexJsonPath = Path.Combine(SourcesFolderPath, "index.yaml");
-        IReadOnlyList<SourceIndexEntry> entries;
+        var indexJsonPath = Path.Combine(SourcesFolderPath, "sources.yaml");
+        IReadOnlyList<SourceListEntry> entries;
         try
         {
             await using var fs = File.OpenRead(indexJsonPath);
             var buffer = new byte[fs.Length];
-            if (await fs.ReadAsync(buffer, cancellationToken) != buffer.Length) throw new IOException("Failed to read index file");
-            entries = YamlSerializer.Deserialize<IReadOnlyList<SourceIndexEntry>>(buffer);
+            if (await fs.ReadAsync(buffer, cancellationToken) != buffer.Length) throw new IOException();
+            entries = YamlSerializer.Deserialize<IReadOnlyList<SourceListEntry>>(buffer).NotNull();
         }
         catch
         {
-            entries = [SourceIndexEntry.Main];
+            entries = [SourceListEntry.Main];
             await using var fs = File.Create(indexJsonPath);
             await fs.WriteAsync(YamlSerializer.Serialize(entries), cancellationToken);
         }
@@ -78,17 +99,16 @@ public class LocalEnvironmentManager(
     public async Task UpdateSourcesAsync(CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(SourcesFolderPath);
-        foreach (var (url, @namespace) in await LoadSourceIndexEntriesAsync(cancellationToken))
+        foreach (var (url, @namespace) in await LoadSourceListEntriesAsync(cancellationToken))
         {
             var relativePath = @namespace.Replace('.', Path.DirectorySeparatorChar);
             var sourceFolderPath = Path.Combine(SourcesFolderPath, relativePath);
             Directory.CreateDirectory(sourceFolderPath);
 
             var process = nativeInterop.CreateProcess(
-                new ProcessCreationOptions
+                new BashProcessCreationOptions
                 {
-                    Type = ProcessStartType.Bash,
-                    Arguments = ["git pull"],
+                    CommandLines = ["git pull"],
                     WorkingDirectory = sourceFolderPath
                 });
             var result = await process.WaitForExitAsync(cancellationToken);
@@ -98,24 +118,51 @@ public class LocalEnvironmentManager(
             {
                 RecursivelyDeleteDirectory(sourceFolderPath);
                 process = nativeInterop.CreateProcess(
-                    new ProcessCreationOptions
+                    new BashProcessCreationOptions
                     {
-                        Type = ProcessStartType.Bash,
-                        Arguments = [$"git clone {url} {relativePath.Replace('\\', '/')}"],
+                        CommandLines = [$"git clone {url} {relativePath.Replace('\\', '/')}"],
                         WorkingDirectory = SourcesFolderPath
                     });
                 result = await process.WaitForExitAsync(cancellationToken);
                 if (result != 0) throw new Exception($"Failed to clone {url}\n{await process.StandardError.ReadToEndAsync(cancellationToken)}");
             }
         }
+
+        // await BuildSourcesKernelMemoryAsync(cancellationToken);
+//
+        // var searchResult = await kernelMemory.SearchAsync(
+        //     "search web pages",
+        //     cancellationToken: cancellationToken);
     }
+
+    private Task BuildSourcesKernelMemoryAsync(CancellationToken cancellationToken) => Parallel.ForEachAsync(
+        EnumerateBundleManifestMetadata(),
+        new ParallelOptions
+        {
+            CancellationToken = cancellationToken,
+            MaxDegreeOfParallelism = 8
+        },
+        async (metadata, token) =>
+        {
+            var bundleManifest = await LoadBundleManifestAsync(metadata, cancellationToken);
+            await kernelMemory.ImportTextAsync(
+                bundleManifest.Description,
+                tags:
+                new TagCollection
+                {
+                    { "namespace", metadata.Namespace },
+                    { "name", metadata.Name },
+                    { "version", metadata.Version.ToString() }
+                },
+                cancellationToken: token);
+        });
 
     /// <summary>
     /// recursively delete a directory, with FileAttributes set to Normal.
     /// This can sometimes be necessary to delete a directory that contains read-only files.
     /// </summary>
     /// <param name="target"></param>
-    public static void RecursivelyDeleteDirectory(string target)
+    private static void RecursivelyDeleteDirectory(string target)
     {
         foreach (var file in Directory.EnumerateFiles(target))
         {
@@ -130,75 +177,56 @@ public class LocalEnvironmentManager(
         Directory.Delete(target, false);
     }
 
-    public async Task<PackageMetadata> LoadLocalNodeAsync(Metadata metadata, CancellationToken cancellationToken)
+    public async Task<BundleManifest> LoadBundleManifestAsync(Metadata metadata, CancellationToken cancellationToken)
     {
-        var nodeMetadataPath = Path.Combine(
-            PackagesFolderPath,
-            metadata.Namespace.Replace('.', Path.DirectorySeparatorChar),
-            metadata.Name,
-            metadata.Version + ".yaml");
-        await using var fs = File.OpenRead(nodeMetadataPath);
-        return await YamlSerializer.DeserializeAsync<PackageMetadata>(fs, yamlSerializerOptions);
-    }
-
-    public async Task<PackageMetadata> LoadSourcePackageAsync(Metadata metadata, CancellationToken cancellationToken)
-    {
-        var nodeMetadataPath = Path.Combine(
+        var bundleManifestPath = Path.Combine(
             SourcesFolderPath,
             metadata.Namespace.Replace('.', Path.DirectorySeparatorChar),
-            "packages",
+            BundlesFolderName,
             metadata.Name,
             metadata.Version + ".yaml");
-        await using var fs = File.OpenRead(nodeMetadataPath);
-        return await YamlSerializer.DeserializeAsync<PackageMetadata>(fs, yamlSerializerOptions);
+        await using var fs = File.OpenRead(bundleManifestPath);
+        return await YamlSerializer.DeserializeAsync<BundleManifest>(fs, yamlSerializerOptions);
     }
 
-    private async static ValueTask<string> SearchScriptAsync(string scriptName, CancellationToken cancellationToken)
+    public async Task<InstalledBundle> LoadInstalledBundleAsync(Metadata metadata, CancellationToken cancellationToken)
     {
-        var indexEntries = await LoadSourceIndexEntriesAsync(cancellationToken);
-        foreach (var entry in indexEntries)
-        {
-            var scriptPath = Path.Combine(
-                SourcesFolderPath,
-                entry.Namespace.Replace('.', Path.DirectorySeparatorChar),
-                "scripts",
-                scriptName + ".sh");
-            if (File.Exists(scriptPath)) return scriptPath;
-        }
-
-        throw new FileNotFoundException($"Script {scriptName} not found.");
+        var bundleManifestPath = Path.Combine(
+            BundlesFolderPath,
+            metadata.Namespace.Replace('.', Path.DirectorySeparatorChar),
+            metadata.Name,
+            metadata.Version + ".yaml");
+        await using var fs = File.OpenRead(bundleManifestPath);
+        return await YamlSerializer.DeserializeAsync<InstalledBundle>(fs, yamlSerializerOptions);
     }
 
     private async ValueTask ExecuteInstallOperationAsync(
-        string installationFolderPath,
+        string runtimeFolderPath,
         RuntimeInstallOperation operation,
         CancellationToken cancellationToken)
     {
         switch (operation)
         {
-            case ScriptRuntimeInstallOperation scriptNodeInstallOperation:
+            case BashRuntimeInstallOperation bashRuntimeInstallOperation:
             {
                 var process = nativeInterop.CreateProcess(
-                    new ProcessCreationOptions
+                    new BashProcessCreationOptions
                     {
-                        Type = ProcessStartType.Bash,
-                        Executable = await SearchScriptAsync(scriptNodeInstallOperation.Name.Trim(), cancellationToken),
-                        Arguments = [scriptNodeInstallOperation.Args],
-                        WorkingDirectory = installationFolderPath
+                        CommandLines = bashRuntimeInstallOperation.CommandLines,
+                        WorkingDirectory = runtimeFolderPath
                     });
-                var result = await process.WaitForExitAsync(cancellationToken);
+                await process.WaitForExitAsync(cancellationToken);
                 break;
             }
-            case BashRuntimeInstallOperation bashNodeInstallOperation:
+            case GitRuntimeInstallOperation gitRuntimeInstallOperation:
             {
                 var process = nativeInterop.CreateProcess(
-                    new ProcessCreationOptions
+                    new BashProcessCreationOptions
                     {
-                        Type = ProcessStartType.Bash,
-                        Arguments = bashNodeInstallOperation.Command.Split(Environment.NewLine),
-                        WorkingDirectory = installationFolderPath
+                        CommandLines = [$"git clone {gitRuntimeInstallOperation.Url}"],
+                        WorkingDirectory = runtimeFolderPath
                     });
-                var result = await process.WaitForExitAsync(cancellationToken);
+                await process.WaitForExitAsync(cancellationToken);
                 break;
             }
             default:
@@ -208,124 +236,122 @@ public class LocalEnvironmentManager(
         }
     }
 
-    public async Task InstallPackageAsync(Metadata metadata, CancellationToken cancellationToken)
+    public async Task<InstalledBundle> InstallBundleAsync(Metadata metadata, BundleManifest bundleManifest, CancellationToken cancellationToken)
     {
-        var nodeMetadata = await LoadSourcePackageAsync(metadata, cancellationToken);
-        // e.g. $(UserProfile)/nodis/packages/nodisai.main.ollama
-        var installationFolderPath = Path.Combine(PackagesFolderPath, $"{metadata.Namespace}.{metadata.Name}".ToLower());
+        // e.g. $(UserProfile)/nodis/bundles/nodisai.main/notion/1.0.0
+        var installationFolderPath = Path.Combine(
+            BundlesFolderPath,
+            metadata.Namespace.ToLower(),
+            metadata.Name.ToLower(),
+            metadata.Version.ToString());
+        var installedBundleMetadataPath = Path.Combine(installationFolderPath, InstalledBundleMetadataFileName);
+        var fileInfo = new FileInfo(installedBundleMetadataPath);
+        if (fileInfo is { Exists: true, Length: > 0 } &&
+            await TryReadInstalledBundle() is { } installedBundle) return installedBundle;
+
         Directory.CreateDirectory(installationFolderPath);
+
         var runtimesFolderPath = Path.Combine(installationFolderPath, "runtimes");
-
-        foreach (var runtime in nodeMetadata.Runtimes)
+        foreach (var runtime in bundleManifest.Runtimes)
         {
-            Directory.CreateDirectory(runtimesFolderPath);
+            var runtimeFolderPath = Path.Combine(runtimesFolderPath, runtime.Id);
+            Directory.CreateDirectory(runtimeFolderPath);
 
-            foreach (var preInstall in runtime.PreInstalls)
+            // todo: BundleRuntimeType
+            if (runtime.PreInstalls != null)
             {
-                await ExecuteInstallOperationAsync(installationFolderPath, preInstall, cancellationToken);
+                foreach (var preInstall in runtime.PreInstalls)
+                {
+                    await ExecuteInstallOperationAsync(runtimeFolderPath, preInstall, cancellationToken);
+                }
             }
 
             switch (runtime)
             {
-                case GitRuntimeMetadata gitRuntimeMetadata:
+                case McpBundleRuntimeConfiguration mcp:
                 {
-                    var process = nativeInterop.CreateProcess(
-                        new ProcessCreationOptions
+                    IClientTransport? clientTransport;
+                    switch (mcp.TransportConfiguration)
+                    {
+                        case StdioMcpTransportConfiguration stdio:
                         {
-                            Type = ProcessStartType.Bash,
-                            Arguments =
-                            [
-                                $"git clone {gitRuntimeMetadata.Url} data",
-                                $"git checkout {gitRuntimeMetadata.Commit}"
-                            ],
-                            WorkingDirectory = installationFolderPath
-                        });
-                    var result = await process.WaitForExitAsync(cancellationToken);
-                    if (result != 0) throw new Exception($"[{result}] Failed to clone {gitRuntimeMetadata.Url}");
-                    break;
-                }
-                case ExecutableBundleRuntimeMetadata executableBundleRuntimeMetadata:
-                {
-                    // win-x64, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64
-                    var operatingSystem = Environment.OSVersion.Platform switch
-                    {
-                        PlatformID.Win32NT => "win",
-                        PlatformID.Unix => "linux",
-                        PlatformID.MacOSX => "osx",
-                        _ => throw new NotSupportedException($"Unsupported operating system: {Environment.OSVersion.Platform}")
-                    };
-                    var architecture = RuntimeInformation.ProcessArchitecture switch
-                    {
-                        Architecture.X64 => "x64",
-                        Architecture.Arm64 => "arm64",
-                        _ => throw new NotSupportedException($"Unsupported architecture: {RuntimeInformation.ProcessArchitecture}")
-                    };
-                    if (!executableBundleRuntimeMetadata.Distributions.TryGetValue($"{operatingSystem}-{architecture}", out var platform) &&
-                        !executableBundleRuntimeMetadata.Distributions.TryGetValue($"{operatingSystem}-universal", out platform))
-                    {
-                        throw new FileNotFoundException($"Platform {operatingSystem}-{architecture} not found.");
-                    }
-
-                    var response = await httpClient.GetAsync(platform.Url, cancellationToken);
-                    await using var inputStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                    var tempDownloadFileName = $"{metadata.Namespace}.{metadata.Name}.{metadata.Version}".ToLower();
-                    var tempDownloadFilePath = Path.Combine(IEnvironmentManager.CacheFolderPath, tempDownloadFileName);
-                    await using var outputStream = File.Create(tempDownloadFilePath, 0, FileOptions.Asynchronous | FileOptions.DeleteOnClose);
-
-                    {
-                        using var hashAlgorithm = platform.Checksum.CreateHashAlgorithm();
-                        var buffer = ArrayPool<byte>.Shared.Rent(81920);
-                        try
-                        {
-                            int bytesRead;
-                            while ((bytesRead = await inputStream.ReadAsync(new Memory<byte>(buffer), cancellationToken)) != 0)
+                            Dictionary<string, string>? environmentVariables = null;
+                            if (stdio.EnvironmentVariables != null)
                             {
-                                await outputStream.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancellationToken);
-                                hashAlgorithm.TransformBlock(buffer, 0, bytesRead, null, 0);
+                                environmentVariables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                                foreach (var (key, value) in stdio.EnvironmentVariables)
+                                {
+                                    if (value.Value != null) environmentVariables[key] = value.Value;
+                                }
                             }
+                            clientTransport = new NativeInteropClientTransport(
+                                nativeInterop,
+                                new NativeInteropClientTransportOptions
+                                {
+                                    Command = stdio.Command,
+                                    Arguments = stdio.Auguments,
+                                    WorkingDirectory = Path.Combine(runtimeFolderPath, stdio.WorkingDirectory ?? string.Empty),
+                                    EnvironmentVariables = environmentVariables
+                                },
+                                loggerFactory);
+                            break;
                         }
-                        finally
+                        case SseMcpTransportConfiguration sse:
                         {
-                            ArrayPool<byte>.Shared.Return(buffer);
+                            Dictionary<string, string>? additionalHeaders = null;
+                            if (sse.Headers != null)
+                            {
+                                additionalHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                                foreach (var (key, value) in sse.Headers)
+                                {
+                                    if (value.Value != null) additionalHeaders[key] = value.Value;
+                                }
+                            }
+                            clientTransport = new SseClientTransport(
+                                new SseClientTransportOptions
+                                {
+                                    Endpoint = new Uri(sse.Url, UriKind.Absolute),
+                                    AdditionalHeaders = additionalHeaders
+                                },
+                                loggerFactory);
+                            break;
                         }
-
-                        hashAlgorithm.TransformFinalBlock([], 0, 0);
-                        if (hashAlgorithm.Hash?.SequenceEqual(Convert.FromHexString(platform.Checksum.Value)) is not true)
+                        default:
                         {
-                            throw new Exception("Hash mismatch.");
+                            throw new NotSupportedException($"Unsupported transport type: {mcp.TransportConfiguration.GetType()}");
                         }
                     }
 
-                    var decompressCommand = platform.Type switch
-                    {
-                        CompressedExecutableNodeServiceDistributionType.Zip =>
-                            $"unzip -d {nativeInterop.GetFullPath(runtimesFolderPath)} {nativeInterop.GetFullPath(tempDownloadFilePath)}",
-                        CompressedExecutableNodeServiceDistributionType.Tar =>
-                            $"tar -xf {nativeInterop.GetFullPath(tempDownloadFilePath)} -C {nativeInterop.GetFullPath(runtimesFolderPath)}",
-                        CompressedExecutableNodeServiceDistributionType.Tgz =>
-                            $"tar -xzf {nativeInterop.GetFullPath(tempDownloadFilePath)} -C {nativeInterop.GetFullPath(runtimesFolderPath)}",
-                        _ => throw new NotSupportedException($"Unsupported compression type: {platform.Type}")
-                    };
-
-                    var process = nativeInterop.CreateProcess(
-                        new ProcessCreationOptions
-                        {
-                            Type = ProcessStartType.Bash,
-                            Arguments = [decompressCommand]
-                        });
-                    var result = await process.WaitForExitAsync(cancellationToken);
-                    if (result != 0) throw new Exception($"[{result}] Failed to decompress {tempDownloadFilePath}");
+                    var client = await McpClientFactory.CreateAsync(clientTransport, cancellationToken: cancellationToken);
+                    var tools = await client.ListToolsAsync(cancellationToken: cancellationToken);
                     break;
-                }
-                default:
-                {
-                    throw new NotSupportedException($"Unsupported runtime type: {runtime.GetType()}");
                 }
             }
 
-            foreach (var postInstall in runtime.PostInstalls)
+            if (runtime.PostInstalls != null)
             {
-                await ExecuteInstallOperationAsync(installationFolderPath, postInstall, cancellationToken);
+                foreach (var postInstall in runtime.PostInstalls)
+                {
+                    await ExecuteInstallOperationAsync(runtimeFolderPath, postInstall, cancellationToken);
+                }
+            }
+        }
+
+        installedBundle = new InstalledBundle(bundleManifest, []);
+        await using var outputStream = fileInfo.Create();
+        await outputStream.WriteAsync(YamlSerializer.Serialize(installedBundle), cancellationToken);
+        return installedBundle;
+
+        async ValueTask<InstalledBundle?> TryReadInstalledBundle()
+        {
+            try
+            {
+                await using var inputStream = fileInfo.OpenRead();
+                return await YamlSerializer.DeserializeAsync<InstalledBundle>(inputStream, yamlSerializerOptions);
+            }
+            catch
+            {
+                return null;
             }
         }
     }
@@ -338,54 +364,32 @@ public class LocalEnvironmentManager(
         foreach (var runtimeConstraints in runtimeConstraintsList)
         {
             var nodeMetadataPathEnumerator = string.IsNullOrEmpty(@namespace) ?
-                Directory.EnumerateDirectories(PackagesFolderPath)
+                Directory.EnumerateDirectories(BundlesFolderPath)
                     .SelectMany(Directory.EnumerateDirectories)
                     .Select(p => Path.Combine(p, runtimeConstraints.Name))
                     .Where(Directory.Exists)
                     .SelectMany(p => Directory.EnumerateFiles(p, "*.yaml")) :
                 Directory.EnumerateFiles(
-                    Path.Combine(PackagesFolderPath, @namespace.Replace('.', Path.DirectorySeparatorChar), runtimeConstraints.Name),
+                    Path.Combine(BundlesFolderPath, @namespace.Replace('.', Path.DirectorySeparatorChar), runtimeConstraints.Name),
                     "*.yaml");
             foreach (var nodeMetadataPath in nodeMetadataPathEnumerator)
             {
                 if (!SemanticVersion.TryParse(Path.GetFileNameWithoutExtension(nodeMetadataPath), out var version)) continue;
                 if (!runtimeConstraints.IsSatisfied(version)) continue;
                 await using var fs = File.OpenRead(nodeMetadataPath);
-                var nodeMetadata = await YamlSerializer.DeserializeAsync<PackageMetadata>(fs, yamlSerializerOptions);
-                _ = nativeInterop.CreateProcess(
-                    new ProcessCreationOptions
-                    {
-                        Arguments = [nodeMetadata.Runtimes[0].To<ExecutableBundleRuntimeMetadata>().Distributions["win-x64"].Execution.Command],
-                        WorkingDirectory = Path.ChangeExtension(nodeMetadataPath, null)
-                    }).WaitForExitAsync(cancellationToken);
-                await Task.Delay(3000, cancellationToken);
-                return null!;
+                var nodeMetadata = await YamlSerializer.DeserializeAsync<BundleManifest>(fs, yamlSerializerOptions);
+
+                // _ = nativeInterop.CreateProcess(
+                //     new ProcessCreationOptions
+                //     {
+                //         Arguments = [nodeMetadata.Runtimes[0].To<ExecutableBundleRuntimeMetadata>().Distributions["win-x64"].Execution.Command],
+                //         WorkingDirectory = Path.ChangeExtension(nodeMetadataPath, null)
+                //     }).WaitForExitAsync(cancellationToken);
+                // await Task.Delay(3000, cancellationToken);
+                // return null!;
             }
         }
 
-        return null!;
+        throw new NotImplementedException();
     }
-
-    private readonly record struct RuntimeMetadata(string Namespace, string Name, SemanticVersion Version, string Id);
 }
-
-/// <summary>
-/// Contains all installed packages.
-/// </summary>
-/// <remarks>
-/// $(UserProfile)/nodis/sources/index.yaml
-/// </remarks>
-[YamlObject]
-public partial record SourceIndexEntry(string Url, string Namespace)
-{
-    public static SourceIndexEntry Main => new("https://github.com/NodisAI/Main", "NodisAI.Main");
-}
-
-/// <summary>
-/// Contains all installed packages.
-/// </summary>
-/// <remarks>
-/// $(UserProfile)/nodis/packages/index.yaml
-/// </remarks>
-[YamlObject]
-public partial record PackagesIndexEntry();

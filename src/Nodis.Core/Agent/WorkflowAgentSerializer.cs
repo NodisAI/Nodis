@@ -17,52 +17,56 @@ public static class WorkflowAgentSerializer
         // we use custom StringBuilder instead of YamlEmitter
         // because this should be a human-readable format, for prompt engineering
 
-        var builder = new IndentStringBuilder();
-        builder.Append("- ").AppendLine(nodeTag).IncreaseIndent();
+        var builder = new IndentStringBuilder("  ").Append("- ").AppendLine(nodeTag).IncreaseIndent();
 
         if (node.Id > 0)
         {
-            builder.Append("id: ").AppendLine(node.Id.ToString());
+            builder = builder.Append("id: ").AppendLine(node.Id.ToString());
         }
 
         if (!string.IsNullOrWhiteSpace(node.Comment))
         {
-            builder.Append("comment: ").AppendLine(node.Comment);
+            builder = builder.Append("comment: ").AppendLine(node.Comment);
         }
 
         if (node.IsDataInputsDynamic)
         {
-            builder.AppendLine("inputs: (dynamic)").IncreaseIndent();
+            builder = builder.AppendLine("inputs: (dynamic)").IncreaseIndent();
         }
         else if (node.DataInputs.Count > 0)
         {
-            builder.AppendLine("inputs:").IncreaseIndent();
+            builder = builder.AppendLine("inputs:").IncreaseIndent();
             foreach (var input in node.DataInputs)
             {
-                builder.Append(input.Name).Append(": (").Append(input.Data.Type.ToFriendlyString()).Append(") ");
+                builder = builder.Append(input.Name).Append(": (").Append(input.Data.Type.ToFriendlyString()).Append(") ");
                 if (input.Data is NodeEnumData enumData)
                 {
-                    builder.Append('[').Append(string.Join('|', enumData.Values)).Append("] ");
+                    builder = builder.Append('[').Append(string.Join('|', enumData.Values)).Append("] ");
                 }
-                builder.AppendLine(input.Description);
+                builder = builder.AppendLine(input.Description);
             }
         }
 
         if (node.ControlOutputs.Count > 0)
         {
-            builder.DecreaseIndent().AppendLine("pins:").IncreaseIndent();
+            builder = builder.DecreaseIndent().AppendLine("pins:").IncreaseIndent();
             foreach (var pin in node.ControlOutputs)
             {
-                builder.Append(pin.Name).Append(": ").AppendLine(pin.Description);
+                builder = builder.Append(pin.Name).Append(": ").AppendLine(pin.Description);
             }
         }
 
         if (node.DataOutputs.Count > 0)
         {
-            builder.DecreaseIndent().AppendLine("outputs:").IncreaseIndent();
+            builder = builder.DecreaseIndent().AppendLine("outputs:").IncreaseIndent();
             foreach (var output in node.DataOutputs)
             {
-                builder.Append(output.Name).Append(": (").Append(output.Data.Type.ToFriendlyString()).Append(") ").AppendLine(output.Description);
+                builder = builder
+                    .Append(output.Name)
+                    .Append(": (")
+                    .Append(output.Data.Type.ToFriendlyString())
+                    .Append(") ")
+                    .AppendLine(output.Description);
             }
         }
 
@@ -206,7 +210,7 @@ public static class WorkflowAgentSerializer
         void Raise() => throw new AggregateException("Errors during deserialization", errors);
     }
 
-    private ref struct IndentStringBuilder(string indent = "  ")
+    private ref struct IndentStringBuilder(string indent)
     {
         private readonly StringBuilder builder = new();
         private int indentLevel;

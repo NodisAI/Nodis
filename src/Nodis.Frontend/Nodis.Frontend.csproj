@@ -36,4 +36,11 @@
     <ItemGroup>
       <AvaloniaResource Include="Assets\avalonia-logo.ico" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Views\Controls\ValueWithDescriptionInput.axaml.cs">
+        <DependentUpon>NodeDataInput.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
+    </ItemGroup>
 </Project>

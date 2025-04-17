@@ -58,7 +58,7 @@ public static class AgentPrompts
               comment: (optional) Human-readable explanation of node functionality in {cultureInfo.EnglishName}
               from: (required except first node) Previous node pin reference in @<id>.<pin> format
               inputs: (optional) Data inputs - constants or references (@<id>.<output>)
-              pins: (optional) Activation gates determining subsequent node execution
+              pins: Activation gates determining subsequent node execution, do not include in your output
               outputs: (optional) Generated data available for subsequent nodes
             ```
 
@@ -117,7 +117,7 @@ public static class AgentPrompts
             # Generation Rules
             1. Maintain sequential ID numbering starting from 1
             2. All references must resolve to existing node. `from` can only reference to one of `pins`, `inputs` can only reference to one of `outputs`
-            3. `inputs`, `pins` and `outputs` are fixed by default unless marked as dynamic, and cannot be modified. There's no need to include the fixed field in the output. If dynamic contains implicit defined item, you cannot override it
+            3. `inputs` and `outputs` are fixed by default, you cannot modify unless it marked as dynamic
             4. Your output should be a valid YAML list of nodes, or valid tool calls format
             """);
 

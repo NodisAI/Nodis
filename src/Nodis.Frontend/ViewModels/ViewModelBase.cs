@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using CommunityToolkit.Mvvm.ComponentModel;
+using SukiUI.Controls;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
 
@@ -11,15 +12,21 @@ public abstract class ReactiveViewModelBase : ObservableValidator
     protected internal ISukiDialogManager DialogManager { get; } = ServiceLocator.Resolve<ISukiDialogManager>();
     protected internal ISukiToastManager ToastManager { get; } = ServiceLocator.Resolve<ISukiToastManager>();
 
-    protected bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null, params string[] alsoNotifyPropertyNames)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+    protected void DialogExceptionHandler(Exception exception, string? message = null, [CallerMemberName] object? source = null) =>
+        DialogManager.TryShowDialog(
+            new SukiDialog
+            {
+                Title = message ?? "Error",
+                Content = exception.GetFriendlyMessage(),
+            });
 
-        field = value;
-        OnPropertyChanged(propertyName);
-        foreach (var notify in alsoNotifyPropertyNames) OnPropertyChanged(notify);
-        return true;
-    }
+    protected void ToastExceptionHandler(Exception exception, string? message = null, [CallerMemberName] object? source = null) =>
+        ToastManager.CreateToast()
+            .SetType(NotificationType.Error)
+            .SetTitle(message ?? "Error")
+            .SetContent(exception.GetFriendlyMessage())
+            .SetCanDismissByClicking()
+            .Queue();
 
     protected internal virtual Task ViewLoaded(CancellationToken cancellationToken) => Task.CompletedTask;
 
@@ -79,5 +86,68 @@ public abstract class ReactiveViewModelBase : ObservableValidator
                 HandleLifetimeException(nameof(ViewUnloaded), e);
             }
         };
+    }
+}
+
+public abstract partial class BusyViewModelBase : ReactiveViewModelBase
+{
+    [ObservableProperty]
+    public partial bool IsBusy { get; private set; }
+
+    public bool IsNotBusy => !IsBusy;
+
+    private Task? currentTask;
+    private readonly SemaphoreSlim executionLock = new(1, 1);
+
+    protected async Task ExecuteBusyTaskAsync(
+        Func<Task> task,
+        ExceptionHandler? exceptionHandler = null,
+        bool enqueueIfBusy = false,
+        CancellationToken cancellationToken = default)
+    {
+        await executionLock.WaitAsync(cancellationToken);
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!enqueueIfBusy && currentTask != null) return;
+
+            Task taskToWait;
+            if (currentTask != null) // enqueueIfBusy is true
+            {
+                taskToWait = currentTask;
+                currentTask = currentTask.ContinueWith(
+                    async _ =>
+                    {
+                        try { await task(); }
+                        catch when (cancellationToken.IsCancellationRequested) { }
+                    },
+                    TaskContinuationOptions.RunContinuationsAsynchronously);
+            }
+            else
+            {
+                taskToWait = currentTask = task();
+            }
+
+            try
+            {
+                IsBusy = true;
+                await taskToWait;
+            }
+            catch (Exception e) when (exceptionHandler != null)
+            {
+                exceptionHandler.Invoke(e);
+            }
+            finally
+            {
+                IsBusy = currentTask is
+                {
+                    Status: TaskStatus.WaitingToRun or TaskStatus.Running or TaskStatus.WaitingForChildrenToComplete
+                };
+            }
+        }
+        finally
+        {
+            executionLock.Release();
+        }
     }
 }

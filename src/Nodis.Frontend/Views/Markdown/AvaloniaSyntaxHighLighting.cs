@@ -21,15 +21,17 @@ public class AvaloniaSyntaxHighLighting(StyleDictionary? styles = null, ILanguag
     private void FormatInlines(string sourceCode, ILanguage? language, InlineCollection inlines)
     {
         InlineCollection = inlines;
+        CreateSpan(sourceCode, null);
 
-        if (language != null)
-        {
-            languageParser.Parse(sourceCode, language, Write);
-        }
-        else
-        {
-            CreateSpan(sourceCode, null);
-        }
+        // TODO: Crash
+        // if (language != null)
+        // {
+        //     languageParser.Parse(sourceCode, language, Write);
+        // }
+        // else
+        // {
+        //     CreateSpan(sourceCode, null);
+        // }
     }
 
     protected override void Write(string parsedSourceCode, IList<Scope> scopes)

@@ -1,34 +1,30 @@
 ﻿namespace Nodis.Core.Models;
 
-public enum ProcessStartType
+public abstract record ProcessCreationOptions
 {
-    /// <summary>
-    /// Use Process
-    /// </summary>
-    Normal,
-    /// <summary>
-    /// Use bash
-    /// </summary>
-    Bash
-}
-
-public record ProcessCreationOptions
-{
-    public ProcessStartType Type { get; init; }
-
-    /// <summary>
-    /// When use <see cref="ProcessStartType.Bash"/>, this can be the script (*.sh) to execute
-    /// </summary>
-    public string? Executable { get; init; }
-
-    public IReadOnlyList<string> Arguments { get; init; } = [];
-
     public string? WorkingDirectory { get; init; }
 
-    public Dictionary<string, string> EnvironmentVariables { get; } = new();
+    public Dictionary<string, string> EnvironmentVariables { get; init; } = new();
 
     /// <summary>
     /// When current process exits, kill the started process.
     /// </summary>
     public bool KillOnExit { get; init; } = true;
+}
+
+public record NormalProcessCreationOptions : ProcessCreationOptions
+{
+    public required string Command { get; init; }
+
+    public IReadOnlyList<string>? Arguments { get; init; }
+}
+
+public record BashProcessCreationOptions : ProcessCreationOptions
+{
+    public required IReadOnlyList<string> CommandLines { get; init; }
+
+    /// <summary>
+    /// Auto exit the bash process when the command is finished.
+    /// </summary>
+    public bool AutoExit { get; init; } = true;
 }

@@ -1,5 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Layout;
+using Avalonia.Media;
 using Markdig;
 
 namespace Nodis.Frontend.Views;
@@ -19,8 +21,23 @@ public class MarkdownViewer : TemplatedControl
 
     public ContentControl RenderedContent { get; } = new();
 
+    public static readonly DirectProperty<MarkdownViewer, bool> IsBusyProperty =
+        AvaloniaProperty.RegisterDirect<MarkdownViewer, bool>(nameof(IsBusy), o => o.IsBusy);
+
+    public bool IsBusy
+    {
+        get;
+        private set
+        {
+            if (field == value) return;
+            field = value;
+            RaisePropertyChanged(IsBusyProperty, !value, value);
+        }
+    }
+
     private async void RenderProcessAsync(string? markdown, CancellationToken cancellationToken)
     {
+        IsBusy = true;
         try
         {
             RenderedContent.Content = null;
@@ -41,9 +58,19 @@ public class MarkdownViewer : TemplatedControl
 
             Renderer.RenderDocumentTo(RenderedContent, document, cancellationToken);
         }
-        catch
+        catch (Exception e)
         {
-            // ignored
+            RenderedContent.Content = new TextBlock
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
+                Text = "Error rendering markdown\n" + e.Message
+            };
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 

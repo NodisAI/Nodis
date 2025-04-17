@@ -3,6 +3,7 @@ using System.Collections.Frozen;
 using System.ComponentModel;
 using System.Reflection;
 using Nodis.Core.Interfaces;
+using Nodis.Core.Threading;
 
 namespace Nodis.Core.Networking;
 
@@ -14,7 +15,7 @@ namespace Nodis.Core.Networking;
 internal class NetworkObjectTracker(object target)
 {
     private static readonly IObjectSynchronizationHub Hub = ServiceLocator.Resolve<IObjectSynchronizationHub>();
-    private static readonly TaskFactory SyncTaskFactory = new(TaskScheduler.FromCurrentSynchronizationContext());
+    private static readonly TaskFactory SyncTaskFactory = new(new LimitedConcurrencyLevelTaskScheduler(1));
     private static readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, PropertyInfo>> TrackedPropertiesCache = new();
     private static readonly ConcurrentDictionary<Guid, WeakReference<NetworkObjectTracker>> TrackingObjects = new();
 

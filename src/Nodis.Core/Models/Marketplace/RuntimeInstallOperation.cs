@@ -3,22 +3,19 @@
 namespace Nodis.Core.Models;
 
 [YamlObject]
-[YamlObjectUnion("!script", typeof(ScriptRuntimeInstallOperation))]
 [YamlObjectUnion("!bash", typeof(BashRuntimeInstallOperation))]
-public abstract partial record RuntimeInstallOperation
-{
-    [YamlMember("env_add_path")]
-    public IReadOnlyList<string>? EnvironmentAddPath { get; init; }
-}
-
-[YamlObject]
-public partial record ScriptRuntimeInstallOperation(
-    [property: YamlMember("name")] string Name,
-    [property: YamlMember("args")] string Args
-) : RuntimeInstallOperation;
+[YamlObjectUnion("!git", typeof(GitRuntimeInstallOperation))]
+public abstract partial record RuntimeInstallOperation;
 
 [YamlObject]
 public partial record BashRuntimeInstallOperation(
-    [property: YamlMember("command")] string Command
+    [property: YamlMember("commands")] IReadOnlyList<string> CommandLines
 ) : RuntimeInstallOperation;
 
+[YamlObject]
+public partial record GitRuntimeInstallOperation(
+    [property: YamlMember("url")] string Url,
+    [property: YamlMember("branch")] string? Branch = null,
+    [property: YamlMember("tag")] string? Tag = null,
+    [property: YamlMember("commit")] string? Commit = null
+) : RuntimeInstallOperation;

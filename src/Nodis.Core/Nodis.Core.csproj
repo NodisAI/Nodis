@@ -13,6 +13,8 @@
         <PackageReference Include="CommunityToolkit.Mvvm"/>
         <PackageReference Include="JsonPath.Net"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection"/>
+        <PackageReference Include="Microsoft.KernelMemory.AI.OpenAI" />
+        <PackageReference Include="Microsoft.KernelMemory.Core" />
         <PackageReference Include="Microsoft.SemanticKernel"/>
         <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI"/>
         <PackageReference Include="ObservableCollections"/>

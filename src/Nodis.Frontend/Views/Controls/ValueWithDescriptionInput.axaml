@@ -1,0 +1,62 @@
+﻿<Styles
+    xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:m="clr-namespace:Nodis.Core.Models;assembly=Nodis.Core" xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+    xmlns:v="clr-namespace:Nodis.Frontend.Views">
+    <Design.PreviewWith>
+        <v:ValueWithDescriptionInput/>
+    </Design.PreviewWith>
+
+    <Style Selector="v|ValueWithDescriptionInput">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <StackPanel Orientation="Vertical">
+                    <v:MarkdownViewer Markdown="{Binding ValueWithDescription.Description, RelativeSource={RelativeSource TemplatedParent}}"/>
+
+                    <ContentPresenter
+                        MinWidth="160" MinHeight="32"
+                        Margin="0,8,0,0" HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"
+                        Content="{TemplateBinding ValueWithDescription}"
+                        IsVisible="{TemplateBinding IsDataSupported}">
+                        <ContentPresenter.DataTemplates>
+                            <DataTemplate>
+                                <DataTemplate.DataType>
+                                    <x:Type x:TypeArguments="sys:Boolean" TypeName="m:ValueWithDescription"/>
+                                </DataTemplate.DataType>
+
+                                <CheckBox IsChecked="{Binding Value, Mode=TwoWay}"/>
+                            </DataTemplate>
+
+                            <DataTemplate>
+                                <DataTemplate.DataType>
+                                    <x:Type x:TypeArguments="sys:Int64" TypeName="m:ValueWithDescription"/>
+                                </DataTemplate.DataType>
+
+                                <NumericUpDown Increment="1" Value="{Binding Value, Mode=TwoWay}"/>
+                            </DataTemplate>
+
+                            <DataTemplate>
+                                <DataTemplate.DataType>
+                                    <x:Type x:TypeArguments="sys:Double" TypeName="m:ValueWithDescription"/>
+                                </DataTemplate.DataType>
+
+                                <NumericUpDown Value="{Binding Value, Mode=TwoWay}"/>
+                            </DataTemplate>
+
+                            <DataTemplate>
+                                <DataTemplate.DataType>
+                                    <x:Type x:TypeArguments="sys:String" TypeName="m:ValueWithDescription"/>
+                                </DataTemplate.DataType>
+
+                                <TextBox
+                                    Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    TextWrapping="Wrap"
+                                    Watermark="{Binding Value, Mode=OneTime}"/>
+                            </DataTemplate>
+                        </ContentPresenter.DataTemplates>
+                    </ContentPresenter>
+                </StackPanel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Styles>

@@ -35,14 +35,14 @@ public partial class WorkflowEditPageViewModel(
             new NodeTemplate("Variable", PackIconEvaIconsKind.Hash, () => new VariableNode()),
         ]));
 
-        var packages = await environmentManager.EnumeratePackagesAsync();
+        var packages = await environmentManager.EnumerateInstalledBundleMetadataAsync();
         foreach (var (@namespace, items) in packages.GroupBy(m => m.Namespace).Select(g => (g.Key, g)))
         {
             nodeGroups.Add(new NodeGroup(
                 @namespace,
                 await items
                     .ToAsyncEnumerable()
-                    .SelectAwait(m => environmentManager.LoadLocalNodeAsync(m, cancellationToken).ToValueTask())
+                    .SelectAwait(m => environmentManager.LoadInstalledBundleAsync(m, cancellationToken).ToValueTask())
                     .SelectMany(m => m.Nodes.ToAsyncEnumerable())
                     .Select(
                         n =>

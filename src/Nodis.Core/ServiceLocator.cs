@@ -6,12 +6,6 @@ public static class ServiceLocator
 {
     private static IServiceProvider? serviceProvider;
 
-    public static void Build(IServiceProvider serviceProvider)
-    {
-        if (serviceProvider != null) throw new InvalidOperationException($"{nameof(ServiceLocator)} is already built.");
-        ServiceLocator.serviceProvider = serviceProvider;
-    }
-
     public static void Build(Action<ServiceCollection> configureServices)
     {
         if (serviceProvider != null) throw new InvalidOperationException($"{nameof(ServiceLocator)} is already built.");

@@ -1,71 +1,139 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Avalonia.Controls;
+using Avalonia.Controls.Templates;
+using Avalonia.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Nodis.Core;
+using Nodis.Frontend.Views;
 using ObservableCollections;
+using SukiUI.Controls;
 
 namespace Nodis.Frontend.ViewModels;
 
-public partial class MarketplacePageViewModel(IEnvironmentManager environmentManager) : ReactiveViewModelBase
+public partial class MarketplacePageViewModel(IEnvironmentManager environmentManager) : BusyViewModelBase
 {
     [field: AllowNull, MaybeNull]
-    internal NotifyCollectionChangedSynchronizedViewList<NodeWrapper> Nodes =>
-        field ??= nodes.ToNotifyCollectionChanged(SynchronizationContextCollectionEventDispatcher.Current);
+    public NotifyCollectionChangedSynchronizedViewList<BundleWrapper> Bundles =>
+        field ??= bundles.ToNotifyCollectionChanged(SynchronizationContextCollectionEventDispatcher.Current);
 
-    private readonly ObservableList<NodeWrapper> nodes = [];
+    private readonly ObservableList<BundleWrapper> bundles = [];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanInstallNode))]
-    [NotifyCanExecuteChangedFor(nameof(InstallNodeCommand))]
-    internal partial NodeWrapper? SelectedNode { get; set; }
+    [NotifyPropertyChangedFor(nameof(IsBundleSelected))]
+    [NotifyCanExecuteChangedFor(nameof(EditBundleEnvironmentVariablesCommand))]
+    [NotifyCanExecuteChangedFor(nameof(InstallBundleCommand))]
+    public partial BundleWrapper? SelectedBundle { get; set; }
 
-    public bool CanInstallNode => SelectedNode is not null;
+    public bool IsBundleSelected => SelectedBundle is not null;
+
+    [ObservableProperty]
+    public partial string? SearchText { get; set; }
 
     [RelayCommand]
-    private Task InstallNodeAsync()
+    private Task RefreshSources(CancellationToken cancellationToken) => ExecuteBusyTaskAsync(
+        async () =>
+        {
+            bundles.Clear();
+            await foreach (var node in LoadSourcesAsync(cancellationToken)) bundles.Add(node);
+        },
+        DialogExceptionHandler,
+        cancellationToken: cancellationToken);
+
+    [RelayCommand(CanExecute = nameof(IsBundleSelected))]
+    private Task EditBundleEnvironmentVariablesAsync()
     {
-        if (SelectedNode is not { } selectedNode) return Task.CompletedTask;
-        return environmentManager.InstallPackageAsync(selectedNode.Metadata, CancellationToken.None);
+        if (SelectedBundle is not { } selectedNode) return Task.CompletedTask;
+
+        var valueWithDescriptions = new List<ValueWithDescriptionBase>();
+        foreach (var runtime in selectedNode.BundleManifest.Runtimes)
+        {
+            switch (runtime)
+            {
+                case McpBundleRuntimeConfiguration { TransportConfiguration: StdioMcpTransportConfiguration { EnvironmentVariables: { } stdioEnvs } }:
+                {
+                    stdioEnvs.ForEach(p => valueWithDescriptions.Add(p.Value));
+                    break;
+                }
+                case McpBundleRuntimeConfiguration { TransportConfiguration: SseMcpTransportConfiguration { Headers: { } sseHeaders } }:
+                {
+                    sseHeaders.ForEach(p => valueWithDescriptions.Add(p.Value));
+                    break;
+                }
+            }
+        }
+
+        if (valueWithDescriptions.Count == 0) return Task.CompletedTask;
+
+        var dialog = new SukiDialog
+        {
+            Title = "Edit Environment Variables",
+            Content = new GroupBox
+            {
+                Header = "Follow the instructions to edit the environment variables, or the bundle may not work properly.",
+                Content = new ListBox
+                {
+                    ItemsSource = valueWithDescriptions,
+                    ItemTemplate = new FuncDataTemplate<ValueWithDescriptionBase>(
+                        (v, _) => new ValueWithDescriptionInput
+                        {
+                            [!ValueWithDescriptionInput.ValueWithDescriptionProperty] = new Binding { Source = v }
+                        })
+                }
+            }
+        };
+        if (!DialogManager.TryShowDialog(dialog)) return Task.CompletedTask;
+
+        var taskCompletionSource = new TaskCompletionSource();
+        dialog.OnDismissed += _ => taskCompletionSource.TrySetResult();
+        return taskCompletionSource.Task;
     }
 
-    private async IAsyncEnumerable<NodeWrapper> LoadSourcesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+    [RelayCommand(CanExecute = nameof(IsBundleSelected))]
+    private async Task InstallBundleAsync(CancellationToken cancellationToken)
+    {
+        if (SelectedBundle is not { } selectedNode) return;
+        await EditBundleEnvironmentVariablesAsync();
+        await environmentManager.InstallBundleAsync(selectedNode.Metadata, selectedNode.BundleManifest, cancellationToken);
+    }
+
+    private async IAsyncEnumerable<BundleWrapper> LoadSourcesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await environmentManager.UpdateSourcesAsync(cancellationToken);
-        var sources = await environmentManager.EnumerateSourcesAsync();
+        var sources = await environmentManager.EnumerateBundleManifestMetadataAsync();
         foreach (var group in sources.GroupBy(m => $"{m.Namespace}:{m.Name}"))
         {
             var items = group.ToList();
-            yield return new NodeWrapper(
+            yield return new BundleWrapper(
                 items[0].Name,
                 items[0],
-                await environmentManager.LoadSourcePackageAsync(items[0], cancellationToken),
+                await environmentManager.LoadBundleManifestAsync(items[0], cancellationToken),
                 items.Select(p => p.Version).ToList());
         }
     }
 
     protected internal override async Task ViewLoaded(CancellationToken cancellationToken)
     {
-        await foreach (var node in LoadSourcesAsync(cancellationToken)) nodes.Add(node);
+        await RefreshSources(cancellationToken);
         await base.ViewLoaded(cancellationToken);
     }
 
     protected internal override Task ViewUnloaded()
     {
-        Nodes.Dispose();
+        Bundles.Dispose();
         return base.ViewUnloaded();
     }
 
-    internal partial class NodeWrapper(
+    public partial class BundleWrapper(
         string title,
         Metadata metadata,
-        PackageMetadata packageMetadata,
+        BundleManifest bundleManifest,
         List<SemanticVersion> versions) : ObservableObject
     {
         public string Title { get; } = title;
 
         public Metadata Metadata { get; } = metadata;
 
-        public PackageMetadata PackageMetadata { get; } = packageMetadata;
+        public BundleManifest BundleManifest { get; } = bundleManifest;
 
         public List<SemanticVersion> Versions { get; } = versions;
 
@@ -84,7 +152,7 @@ public partial class MarketplacePageViewModel(IEnvironmentManager environmentMan
         public AsyncProperty<string?> ReadmeMarkdown { get; } = new(
             async () =>
             {
-                if (!Uri.TryCreate(packageMetadata.Readme, UriKind.Absolute, out var uri) ||
+                if (!Uri.TryCreate(bundleManifest.Readme, UriKind.Absolute, out var uri) ||
                     uri.Scheme is not "http" and not "https") return null;
 
                 var response = await ServiceLocator.Resolve<HttpClient>().GetAsync(uri);

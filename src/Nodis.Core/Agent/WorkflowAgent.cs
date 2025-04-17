@@ -2,8 +2,11 @@
 using System.ComponentModel;
 using System.Text;
 using System.Text.RegularExpressions;
+using MessagePack;
+using MessagePack.Resolvers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.KernelMemory;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
@@ -18,7 +21,7 @@ public static partial class WorkflowAgent
         var builder = Kernel.CreateBuilder();
         builder.AddOpenAIChatCompletion(
             modelId: "gpt-4o",
-            apiKey: Environment.GetEnvironmentVariable("NODIS_API_KEY").NotNull("NODIS_API_KEY is not set")
+            apiKey: Environment.GetEnvironmentVariable("NODIS_API_KEY", EnvironmentVariableTarget.User).NotNull("NODIS_API_KEY is not set")
         );
         builder.Services.AddSingleton<ILoggerFactory, ConsoleLoggerFactory>();
         builder.Plugins.AddFromType<WorkflowTools>();
@@ -33,13 +36,13 @@ public static partial class WorkflowAgent
                     "You are a professional workflow generator. You should follow following requirements to write a workflow in YAML format.",
                     EnableFunctionNodes: false,
                     EnableThirdPartyNodes: false)));
-        chatHistory.AddUserMessage("每天上午8点爬取arxiv最新的大模型相关论文，下载pdf到我的文档");
+        chatHistory.AddUserMessage("为了测试，请你自己提出一个复杂的需求，思考其实现并生成对应的工作流");
 
         var promptExecutionSettings = new OpenAIPromptExecutionSettings
         {
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(autoInvoke: false),
-            Temperature = 0.3d,
-            TopP = 0.95d
+            // Temperature = 0.3d,
+            // TopP = 0.95d
         };
 
         while (true)
@@ -125,11 +128,12 @@ public sealed class WorkflowTools(IChatCompletionService chatCompletion)
 {
     [KernelFunction("search_node")]
     [Description("Search for third-party nodes, useful when built-in nodes are not enough")]
-    public async Task<string> SearchNodeAsync(string description)
+    public async Task<string> SearchNodeAsync(
+        [Description("Keywords or concise description in English")] string query)
     {
         var chatHistory = new ChatHistory();
         // chatHistory.AddSystemMessage(Prompts.FunctionCreator);
-        chatHistory.AddUserMessage(description);
+        chatHistory.AddUserMessage(query);
         var result = await chatCompletion.GetChatMessageContentAsync(chatHistory);
         return result.Content ?? "Not found";
     }

@@ -1,10 +1,13 @@
 ﻿<Styles
     xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:md="clr-namespace:Nodis.Frontend.Views">
+    xmlns:md="clr-namespace:Nodis.Frontend.Views" xmlns:suki="https://github.com/kikipoulet/SukiUI">
     <Style Selector="md|MarkdownViewer">
         <Setter Property="Template">
             <ControlTemplate TargetType="md:MarkdownViewer">
-                <ContentControl Content="{Binding RenderedContent, RelativeSource={RelativeSource TemplatedParent}}"/>
+                <Panel>
+                    <ContentControl Content="{Binding RenderedContent, RelativeSource={RelativeSource TemplatedParent}}"/>
+                    <suki:BusyArea IsBusy="{Binding IsBusy, RelativeSource={RelativeSource TemplatedParent}}" IsHitTestVisible="False"/>
+                </Panel>
             </ControlTemplate>
         </Setter>
     </Style>
