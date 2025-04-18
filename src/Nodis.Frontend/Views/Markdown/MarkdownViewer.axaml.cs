@@ -3,6 +3,8 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Markdig;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 
 namespace Nodis.Frontend.Views;
 
@@ -17,6 +19,18 @@ public class MarkdownViewer : TemplatedControl
     {
         get => GetValue(MarkdownProperty);
         set => SetValue(MarkdownProperty, value);
+    }
+
+    public static readonly StyledProperty<string> UrlRootProperty =
+        AvaloniaProperty.Register<MarkdownViewer, string>(nameof(UrlRoot), string.Empty);
+
+    /// <summary>
+    /// Url root will apply to all links (hyperlinks, images, etc.) in the markdown.
+    /// </summary>
+    public string UrlRoot
+    {
+        get => GetValue(UrlRootProperty);
+        set => SetValue(UrlRootProperty, value);
     }
 
     public ContentControl RenderedContent { get; } = new();
@@ -35,6 +49,8 @@ public class MarkdownViewer : TemplatedControl
         }
     }
 
+    private MarkdownPipeline Pipeline { get; } = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
     private async void RenderProcessAsync(string? markdown, CancellationToken cancellationToken)
     {
         IsBusy = true;
@@ -43,18 +59,22 @@ public class MarkdownViewer : TemplatedControl
             RenderedContent.Content = null;
             if (string.IsNullOrWhiteSpace(markdown)) return;
 
-            var document =
-                await Task.Run(
-                    () => Markdig.Markdown.Parse(
-                        markdown,
-                        new MarkdownPipelineBuilder()
-                            .UseEmphasisExtras()
-                            .UseGridTables()
-                            .UsePipeTables()
-                            .UseTaskLists()
-                            .UseAutoLinks()
-                            .Build()),
-                    cancellationToken);
+            var urlRoot = UrlRoot;
+            var document = await Task.Run(
+                () =>
+                {
+                    var doc = Markdig.Markdown.Parse(markdown, Pipeline);
+                    foreach (var linkInline in doc.Descendants().OfType<LinkInline>())
+                    {
+                        if (!Uri.TryCreate(linkInline.Url, UriKind.Relative, out _)) continue;
+                        var absoluteUrl = $"{urlRoot.TrimEnd('/')}/{linkInline.Url.TrimStart('/')}";
+                        if (Uri.TryCreate(absoluteUrl, UriKind.Absolute, out var uri))
+                        {
+                            linkInline.Url = uri.ToString();
+                        }
+                    }
+                    return doc;
+                }, cancellationToken);
 
             Renderer.RenderDocumentTo(RenderedContent, document, cancellationToken);
         }

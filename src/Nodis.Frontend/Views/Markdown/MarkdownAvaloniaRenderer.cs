@@ -1,7 +1,12 @@
-﻿using Avalonia.Controls;
+﻿using AsyncImageLoader;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
+using ColorCode;
 using ColorCode.Styling;
+using CommunityToolkit.Mvvm.Input;
+using IconPacks.Avalonia.EvaIcons;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.TaskLists;
 using Markdig.Syntax;
@@ -190,7 +195,7 @@ public class MarkdownAvaloniaRenderer
         var itemCount = listBlock.Count;
 
         Func<int, string> markerTextGetter = listBlock.IsOrdered ?
-            index => $"{index+1}." :
+            index => $"{index + 1}." :
             _ => "-";
 
         var listElement = new Border
@@ -233,7 +238,11 @@ public class MarkdownAvaloniaRenderer
 
             if (RenderBlock(itemBlock, cancellationToken) is not { } renderedItemBlock) continue;
             lastRenderedItemBlock = renderedItemBlock;
-            renderedItemBlock.Margin = new Thickness(renderedItemBlock.Margin.Left, renderedItemBlock.Margin.Top, renderedItemBlock.Margin.Right, renderedItemBlock.Margin.Bottom / 4);
+            renderedItemBlock.Margin = new Thickness(
+                renderedItemBlock.Margin.Left,
+                renderedItemBlock.Margin.Top,
+                renderedItemBlock.Margin.Right,
+                renderedItemBlock.Margin.Bottom / 4);
 
             var marker = new TextBlock
             {
@@ -255,8 +264,12 @@ public class MarkdownAvaloniaRenderer
         }
 
         if (lastRenderedItemBlock != null)
-            lastRenderedItemBlock.Margin = new Thickness(lastRenderedItemBlock.Margin.Left, lastRenderedItemBlock.Margin.Top, lastRenderedItemBlock.Margin.Right, 0);
-        
+            lastRenderedItemBlock.Margin = new Thickness(
+                lastRenderedItemBlock.Margin.Left,
+                lastRenderedItemBlock.Margin.Top,
+                lastRenderedItemBlock.Margin.Right,
+                0);
+
         return listElement;
     }
 
@@ -283,12 +296,18 @@ public class MarkdownAvaloniaRenderer
         if (string.IsNullOrWhiteSpace(fencedCodeBlock.Info))
             return RenderCodeBlock(fencedCodeBlock, cancellationToken);
 
-        var codeElement = new Border
+        var codeContainer = new Grid
         {
-            CornerRadius = new CornerRadius(3),
+            ColumnDefinitions = [new ColumnDefinition(), new ColumnDefinition(GridLength.Auto)],
             Margin = new Thickness(0, 0, 0, 12),
             Classes = { "Markdown", "FencedCodeBlock" }
         };
+
+        codeContainer.Children.Add(
+            new Border
+            {
+                Classes = { "Markdown", "FencedCodeBlock" }
+            });
 
         var codeContentElement = new TextBlock
         {
@@ -297,19 +316,37 @@ public class MarkdownAvaloniaRenderer
             FontFamily = GetCodeTextFontFamily(),
         };
 
-        codeElement.Child =
-            codeContentElement;
+        codeContainer.Children.Add(
+            new ScrollViewer
+            {
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                Content = codeContentElement
+            });
+
+        codeContainer.Children.Add(
+            new Button
+            {
+                Classes = { "Markdown", "FencedCodeBlock" },
+                Content = new PackIconEvaIcons { Kind = PackIconEvaIconsKind.CopyOutline },
+                Command = new RelayCommand(
+                    () =>
+                    {
+                        if (TopLevel.GetTopLevel(codeContainer) is not { Clipboard: { } clipboard }) return;
+                        clipboard.SetTextAsync(fencedCodeBlock.Lines.ToString());
+                    })
+            });
 
         if (fencedCodeBlock.Inline != null)
             codeContentElement.Inlines?.AddRange(
                 RenderInlines(fencedCodeBlock.Inline, cancellationToken));
 
-        var language = ColorCode.Languages.FindById(fencedCodeBlock.Info);
+        var language = Languages.FindById(fencedCodeBlock.Info);
 
         var writer = new AvaloniaSyntaxHighLighting(StyleDictionary.DefaultDark);
         writer.FormatTextBlock(fencedCodeBlock.Lines.ToString(), language, codeContentElement);
-        
-        return codeElement;
+
+        return codeContainer;
     }
 
     private Control RenderCodeBlock(CodeBlock codeBlock, CancellationToken cancellationToken)
@@ -353,7 +390,7 @@ public class MarkdownAvaloniaRenderer
         };
 
         var quoteContentPanel = new StackPanel();
-        
+
         quoteElement.Child = quoteContentPanel;
 
         foreach (var renderedBlock in RenderBlocks(quoteBlock, cancellationToken))
@@ -366,7 +403,7 @@ public class MarkdownAvaloniaRenderer
     {
         if (cancellationToken.IsCancellationRequested)
             return new Control();
-        
+
         var headingElement = new TextBlock
         {
             TextWrapping = TextWrapping.Wrap,
@@ -566,10 +603,8 @@ public class MarkdownAvaloniaRenderer
         if (cancellationToken.IsCancellationRequested)
             return new AvaloniaDocs.Run();
 
-        Uri? uri = null;
-
-        if (linkInline.Url != null && Uri.TryCreate(linkInline.Url, UriKind.RelativeOrAbsolute, out var result))
-            uri = result;
+        if (linkInline.Url == null || !Uri.TryCreate(linkInline.Url, UriKind.RelativeOrAbsolute, out var uri))
+            return new AvaloniaDocs.Run();
 
         if (linkInline.IsImage)
         {
@@ -577,14 +612,13 @@ public class MarkdownAvaloniaRenderer
             {
                 MaxWidth = 300
             };
-            
-            img.DoubleTapped += (_, _) =>
-            {
-                Console.WriteLine(uri?.ToString());
-            };
-            
-            if (uri != null)
-                AsyncImageLoader.ImageLoader.SetSource(img, uri.ToString());
+
+            // img.DoubleTapped += (_, _) =>
+            // {
+            //     Console.WriteLine(uri?.ToString());
+            // };
+
+            ImageLoader.SetSource(img, uri.ToString());
 
             return img.WrapWithContainer();
         }

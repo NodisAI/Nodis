@@ -4,10 +4,9 @@
     <Style Selector="md|MarkdownViewer">
         <Setter Property="Template">
             <ControlTemplate TargetType="md:MarkdownViewer">
-                <Panel>
+                <suki:BusyArea IsBusy="{Binding IsBusy, RelativeSource={RelativeSource TemplatedParent}}">
                     <ContentControl Content="{Binding RenderedContent, RelativeSource={RelativeSource TemplatedParent}}"/>
-                    <suki:BusyArea IsBusy="{Binding IsBusy, RelativeSource={RelativeSource TemplatedParent}}" IsHitTestVisible="False"/>
-                </Panel>
+                </suki:BusyArea>
             </ControlTemplate>
         </Setter>
     </Style>
