@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using System.Text;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.System.JobObjects;
@@ -43,12 +44,15 @@ public class WindowsNativeInterop : INativeInterop
     {
         var startInfo = new ProcessStartInfo
         {
+            StandardInputEncoding = Encoding.UTF8,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true,
-            WorkingDirectory = options.WorkingDirectory
+            WorkingDirectory = options.WorkingDirectory,
         };
         var process = new Process { StartInfo = startInfo };
 
