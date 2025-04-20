@@ -109,7 +109,7 @@ public abstract partial class BusyViewModelBase : ReactiveViewModelBase
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!enqueueIfBusy && currentTask != null) return;
+            if (!enqueueIfBusy && IsBusy) return;
 
             Task taskToWait;
             if (currentTask != null) // enqueueIfBusy is true

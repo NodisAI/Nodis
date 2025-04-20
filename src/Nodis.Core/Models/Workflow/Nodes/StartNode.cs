@@ -1,10 +1,13 @@
 ﻿using Nodis.Core.Extensions;
+using Nodis.Core.Interfaces;
 
 namespace Nodis.Core.Models.Workflow;
 
-public sealed class StartNode : Node
+public sealed class StartNode : Node, INamedObject
 {
-    public override string Name => "Start";
+    public string Name => "Start";
+
+    public string? Description => "The start node of the workflow. It is the first node that is executed when the workflow is started.";
 
     public StartNode()
     {

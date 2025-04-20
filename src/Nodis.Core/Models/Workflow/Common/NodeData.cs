@@ -213,7 +213,7 @@ public partial class NodeDoubleData : NodeData
 [MessagePackObject(AllowPrivate = true)]
 public partial class NodeStringData : NodeData
 {
-    public NodeStringData(string value = "")
+    public NodeStringData(string value)
     {
         Value = value;
     }

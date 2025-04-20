@@ -132,7 +132,7 @@ public class WindowsNativeInterop : INativeInterop
 
         public void Kill()
         {
-            process.Kill(true);
+            process.Kill();
         }
     }
 

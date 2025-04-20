@@ -27,7 +27,7 @@ public partial class TriggerNode : BuiltInNode
         DataInputs.Add(
             new NodeDataInputPin(
                 "hotkey",
-                new NodeStringData
+                new NodeStringData(string.Empty)
                 {
                     Watermark = "e.g. Ctrl + Shift + I",
                 })

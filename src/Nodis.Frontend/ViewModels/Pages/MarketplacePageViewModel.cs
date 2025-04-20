@@ -92,7 +92,6 @@ public partial class MarketplacePageViewModel(
                 downloadTask.Status = DownloadTaskStatus.InProgress;
                 await environmentManager.InstallBundleAsync(
                     metadata,
-                    selectedBundle.BundleManifest,
                     downloadTask,
                     cancellationTokenSource.Token);
 

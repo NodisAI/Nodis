@@ -58,10 +58,9 @@ public class LocalEnvironmentManager(
         // e.g. $(UserProfile)/nodis/bundles/nodisai.main/notion/1.0.0/metadata.yaml
         if (!Directory.Exists(BundlesFolderPath)) yield break;
         foreach (var installedBundlePath in Directory
-                     .EnumerateDirectories(BundlesFolderPath) // $(UserProfile)/nodis/bundles
-                     .SelectMany(Directory.EnumerateDirectories) // $(UserProfile)/nodis/bundles/nodisai.main
+                     .EnumerateDirectories(BundlesFolderPath) // $(UserProfile)/nodis/bundles/nodisai.main
                      .SelectMany(Directory.EnumerateDirectories) // $(UserProfile)/nodis/bundles/nodisai.main/notion
-                     .SelectMany(Directory.EnumerateDirectories) // $(UserProfile)/nodis/bundles/nodisai.main/notion/1.0.0
+                     .SelectMany(Directory.EnumerateDirectories) // $(UserProfile)/nodis/bundles/nodisai.main/notionn/1.0.0
                      .Where(p => new FileInfo(Path.Combine(p, InstalledBundleMetadataFileName)) is { Exists: true, Length: > 0 }))
         {
             if (!SemanticVersion.TryParse(Path.GetFileNameWithoutExtension(installedBundlePath), out var version)) continue;
@@ -194,9 +193,10 @@ public class LocalEnvironmentManager(
     {
         var bundleManifestPath = Path.Combine(
             BundlesFolderPath,
-            metadata.Namespace.Replace('.', Path.DirectorySeparatorChar),
+            metadata.Namespace.ToLower(),
             metadata.Name,
-            metadata.Version + ".yaml");
+            metadata.Version.ToString(),
+            InstalledBundleMetadataFileName);
         await using var fs = File.OpenRead(bundleManifestPath);
         return await YamlSerializer.DeserializeAsync<InstalledBundle>(fs, yamlSerializerOptions);
     }
@@ -241,12 +241,11 @@ public class LocalEnvironmentManager(
 
     public async Task<InstalledBundle> InstallBundleAsync(
         Metadata metadata,
-        BundleManifest bundleManifest,
         IAdvancedProgress? progress,
         CancellationToken cancellationToken)
     {
-        var progressValue = 0d;
-        progress?.Report(progressValue, "Reading bundle manifest...");
+        progress?.Report(0d);
+        progress?.Report("Reading bundle manifest...");
 
         // e.g. $(UserProfile)/nodis/bundles/nodisai.main/notion/1.0.0
         var installationFolderPath = Path.Combine(
@@ -256,15 +255,16 @@ public class LocalEnvironmentManager(
             metadata.Version.ToString());
         var installedBundleMetadataPath = Path.Combine(installationFolderPath, InstalledBundleMetadataFileName);
         var fileInfo = new FileInfo(installedBundleMetadataPath);
-        if (fileInfo is { Exists: true, Length: > 0 } &&
-            await TryReadInstalledBundle() is { } installedBundle) return installedBundle;
-
-        Directory.CreateDirectory(installationFolderPath);
-        progress?.Report(progressValue += 10d, "Installing runtimes...");
+        if (fileInfo is { Exists: true, Length: > 0 } && await TryReadInstalledBundle() is { } installedBundle) return installedBundle;
+        var bundleManifest = await LoadBundleManifestAsync(metadata, cancellationToken);
 
         // install runtime (10% - 99%)
+        progress?.Report(10d);
+        progress?.Report("Installing runtimes...");
+        Directory.CreateDirectory(installationFolderPath);
         var progressPerRuntime = 89d / bundleManifest.Runtimes.Count;
         var runtimesFolderPath = Path.Combine(installationFolderPath, "runtimes");
+        var bundleNodes = new List<BundleNode>();
         foreach (var runtime in bundleManifest.Runtimes)
         {
             var runtimeFolderPath = Path.Combine(runtimesFolderPath, runtime.Id);
@@ -278,102 +278,43 @@ public class LocalEnvironmentManager(
                 foreach (var preInstall in runtime.PreInstalls)
                 {
                     await ExecuteInstallOperationAsync(runtimeFolderPath, preInstall, progress, cancellationToken);
-                    progress?.Report(progressValue += progressPerStep);
+                    progress?.Advance(progressPerStep);
                 }
             }
 
-            var bundleNodes = new List<BundleNode>();
             switch (runtime)
             {
                 case McpBundleRuntimeConfiguration mcp:
                 {
-                    IClientTransport? clientTransport;
-                    switch (mcp.TransportConfiguration)
+                    await foreach (var node in ParseMcpBundleNodesAsync(
+                                       metadata,
+                                       runtime.Id,
+                                       mcp,
+                                       runtimeFolderPath,
+                                       progressPerStep,
+                                       progress,
+                                       cancellationToken))
                     {
-                        case StdioMcpTransportConfiguration stdio:
-                        {
-                            Dictionary<string, string>? environmentVariables = null;
-                            if (stdio.EnvironmentVariables != null)
-                            {
-                                environmentVariables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                                foreach (var (key, value) in stdio.EnvironmentVariables)
-                                {
-                                    if (value.Value != null) environmentVariables[key] = value.Value;
-                                }
-                            }
-                            clientTransport = new NativeInteropClientTransport(
-                                nativeInterop,
-                                new NativeInteropClientTransportOptions
-                                {
-                                    Command = stdio.Command,
-                                    Arguments = stdio.Arguments,
-                                    WorkingDirectory = Path.Combine(runtimeFolderPath, stdio.WorkingDirectory ?? string.Empty),
-                                    EnvironmentVariables = environmentVariables
-                                },
-                                loggerFactory);
-                            break;
-                        }
-                        case SseMcpTransportConfiguration sse:
-                        {
-                            Dictionary<string, string>? additionalHeaders = null;
-                            if (sse.Headers != null)
-                            {
-                                additionalHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                                foreach (var (key, value) in sse.Headers)
-                                {
-                                    if (value.Value != null) additionalHeaders[key] = value.Value;
-                                }
-                            }
-                            clientTransport = new SseClientTransport(
-                                new SseClientTransportOptions
-                                {
-                                    Endpoint = new Uri(sse.Url, UriKind.Absolute),
-                                    AdditionalHeaders = additionalHeaders
-                                },
-                                loggerFactory);
-                            break;
-                        }
-                        default:
-                        {
-                            throw new NotSupportedException($"Unsupported transport type: {mcp.TransportConfiguration.GetType()}");
-                        }
+                        bundleNodes.Add(node);
                     }
-
-                    await Task.Delay(10000000);
-
-                    var client = await McpClientFactory.CreateAsync(clientTransport, cancellationToken: cancellationToken);
-                    var tools = await client.ListToolsAsync(cancellationToken: cancellationToken);
-                    var response = await client.CallToolAsync(
-                        "playwright_navigate",
-                        new Dictionary<string, object?>
-                        {
-                            { "url", "https://github.com/xoofx/markdig/pull/201/commits" }
-                        },
-                        cancellationToken: cancellationToken);
-                    response = await client.CallToolAsync(
-                        "playwright_screenshot",
-                        new Dictionary<string, object?>
-                        {
-                            { "name", "11" }
-                        },
-                        cancellationToken: cancellationToken);
                     break;
                 }
             }
-            progress?.Report(progressValue += progressPerStep);
+            progress?.Advance(progressPerStep);
 
             if (runtime.PostInstalls != null)
             {
                 foreach (var postInstall in runtime.PostInstalls)
                 {
                     await ExecuteInstallOperationAsync(runtimeFolderPath, postInstall, progress, cancellationToken);
-                    progress?.Report(progressValue += progressPerStep);
+                    progress?.Advance(progressPerStep);
                 }
             }
         }
 
-        progress?.Report(99d, "Saving changes...");
-        installedBundle = new InstalledBundle(bundleManifest, []);
+        progress?.Report(99d);
+        progress?.Report("Saving changes...");
+        installedBundle = new InstalledBundle(bundleManifest, bundleNodes);
         await using var outputStream = fileInfo.Create();
         await outputStream.WriteAsync(YamlSerializer.Serialize(installedBundle), cancellationToken);
         return installedBundle;
@@ -389,6 +330,111 @@ public class LocalEnvironmentManager(
             {
                 return null;
             }
+        }
+    }
+
+    private async IAsyncEnumerable<BundleMcpNode> ParseMcpBundleNodesAsync(
+        Metadata metadata,
+        string runtimeId,
+        McpBundleRuntimeConfiguration mcp,
+        string runtimeFolderPath,
+        double totalProgress,
+        IAdvancedProgress? progress,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        IClientTransport? clientTransport;
+        switch (mcp.TransportConfiguration)
+        {
+            case StdioMcpTransportConfiguration stdio:
+            {
+                Dictionary<string, string>? environmentVariables = null;
+                if (stdio.EnvironmentVariables != null)
+                {
+                    environmentVariables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var (key, value) in stdio.EnvironmentVariables)
+                    {
+                        if (value.Value != null) environmentVariables[key] = value.Value;
+                    }
+                }
+                clientTransport = new NativeInteropClientTransport(
+                    nativeInterop,
+                    new NativeInteropClientTransportOptions
+                    {
+                        Command = stdio.Command,
+                        Arguments = stdio.Arguments,
+                        WorkingDirectory = Path.Combine(runtimeFolderPath, stdio.WorkingDirectory ?? string.Empty),
+                        EnvironmentVariables = environmentVariables
+                    },
+                    loggerFactory);
+                break;
+            }
+            case SseMcpTransportConfiguration sse:
+            {
+                Dictionary<string, string>? additionalHeaders = null;
+                if (sse.Headers != null)
+                {
+                    additionalHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var (key, value) in sse.Headers)
+                    {
+                        if (value.Value != null) additionalHeaders[key] = value.Value;
+                    }
+                }
+                clientTransport = new SseClientTransport(
+                    new SseClientTransportOptions
+                    {
+                        Endpoint = new Uri(sse.Url, UriKind.Absolute),
+                        AdditionalHeaders = additionalHeaders
+                    },
+                    loggerFactory);
+                break;
+            }
+            default:
+            {
+                throw new NotSupportedException($"Unsupported transport type: {mcp.TransportConfiguration.GetType()}");
+            }
+        }
+
+        await using var client = await McpClientFactory.CreateAsync(clientTransport, cancellationToken: cancellationToken);
+        var tools = await client.ListToolsAsync(cancellationToken: cancellationToken);
+        foreach (var tool in tools)
+        {
+            var name = (tool.AdditionalProperties.TryGetValue("title", out var titleValue) ? titleValue?.ToString() : null) ?? tool.Name;
+            var dataInputPins = tool.JsonSchema.GetProperty("properties")
+                .EnumerateObject()
+                .Select(
+                    property => new NodeDataInputPin(
+                        property.Name,
+                        property.Value.GetProperty("type").GetString() switch
+                        {
+                            "string" => new NodeStringData(string.Empty),
+                            "number" => new NodeInt64Data(0L),
+                            "object" => new NodeDictionaryData(new Hashtable()),
+                            "array" => new NodeEnumerableData(new ArrayList()),
+                            "boolean" => new NodeBooleanData(false),
+                            _ => new NodeAnyData(),
+                        })
+                    {
+                        Description = TryGetPropertyAsString(property.Value, "description")
+                    })
+                .ToReadOnlyList();
+            yield return new BundleMcpNode
+            {
+                Metadata = metadata,
+                RuntimeId = runtimeId,
+                Name = name,
+                ToolName = tool.Name,
+                Description = tool.Description,
+                SerializableDataInputs = dataInputPins,
+                SerializableDataOutputs = [new NodeDataOutputPin("output", new NodeAnyData())]
+            };
+            progress?.Advance(totalProgress / tools.Count);
+        }
+
+        static string? TryGetPropertyAsString(in JsonElement element, string key)
+        {
+            if (!element.TryGetProperty(key, out var value)) return null;
+            if (value.ValueKind == JsonValueKind.String) return value.GetString();
+            return null;
         }
     }
 

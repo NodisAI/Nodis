@@ -107,7 +107,17 @@ public partial class NativeInteropClientTransport(
         public override async ValueTask DisposeAsync()
         {
             await cancellationTokenSource.CancelAsync();
-            if (!process.HasExited) process.Kill();
+            if (!process.HasExited)
+            {
+                try
+                {
+                    process.Kill();
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
             await process.WaitForExitAsync(CancellationToken.None);
         }
     }

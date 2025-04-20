@@ -38,6 +38,8 @@ public partial class DownloadTask(string title) : ObservableObject, IAdvancedPro
 
     public void Report(string value) => ProgressText = value;
 
+    public void Advance(double value) => Progress += value;
+
     [ObservableProperty]
     public partial ICommand? RetryCommand { get; set; }
 

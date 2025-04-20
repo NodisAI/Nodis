@@ -1,5 +1,6 @@
-﻿using System.Text.Json;
-using MessagePack;
+﻿using MessagePack;
+using Nodis.Core.Extensions;
+using Nodis.Core.Interfaces;
 using VYaml.Annotations;
 using VYaml.Serialization;
 
@@ -12,45 +13,48 @@ namespace Nodis.Core.Models.Workflow;
 [YamlObjectUnion("!mcp", typeof(BundleMcpNode))]
 [MessagePackObject(AllowPrivate = true)]
 [Union(0, typeof(BundleMcpNode))]
-public abstract partial class BundleNode : Node
+public abstract partial class BundleNode : Node, INamedObject
 {
-    [YamlIgnore]
-    [IgnoreMember]
-    public override string Name =>
-        throw new InvalidOperationException("Should implemented in derived class");
+    [YamlMember("name")]
+    [Key(12)]
+    public required string Name { get; set; }
+
+    [YamlMember("description")]
+    [Key(13)]
+    public string? Description { get; set; }
 
     /// <summary>
     /// The metadata of the bundle.
     /// </summary>
     [YamlMember("metadata")]
-    [Key(12)]
+    [Key(14)]
     public required Metadata Metadata { get; init; }
 
     [YamlMember("runtime_id")]
-    [Key(13)]
+    [Key(15)]
     public required string RuntimeId { get; init; }
 
     [YamlMember("data_inputs")]
-    [Key(14)]
-    public IList<NodeDataInputPin>? SerializableDataInputs
+    [Key(16)]
+    public IReadOnlyList<NodeDataInputPin>? SerializableDataInputs
     {
         get;
         init
         {
             if ((field = value) == null) return;
-            DataInputs.AddRange(field);
+            DataInputs.Reset(field);
         }
     }
 
     [YamlMember("data_outputs")]
-    [Key(15)]
-    public IList<NodeDataOutputPin>? SerializableDataOutputs
+    [Key(17)]
+    public IReadOnlyList<NodeDataOutputPin>? SerializableDataOutputs
     {
         get;
         init
         {
             if ((field = value) == null) return;
-            DataOutputs.AddRange(field);
+            DataOutputs.Reset(field);
         }
     }
 
@@ -67,16 +71,7 @@ public abstract partial class BundleNode : Node
 [MessagePackObject(AllowPrivate = true)]
 public partial class BundleMcpNode : BundleNode
 {
-    [YamlMember("name")]
-    [Key(16)]
-    public required new string Name { get; init; }
-
     [YamlMember("tool_name")]
-    [Key(17)]
+    [Key(18)]
     public required string ToolName { get; init; }
-
-    public static BundleMcpNode Create(string name, string toolName, JsonElement inputSchema)
-    {
-        throw new NotImplementedException();
-    }
 }

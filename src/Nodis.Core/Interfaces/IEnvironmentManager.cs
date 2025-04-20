@@ -50,13 +50,11 @@ public interface IEnvironmentManager
     /// NOTICE: All <see cref="ValueWithDescription{T}"/> should be filled before calling this method. It will use its DefaultValue as final value
     /// </remarks>
     /// <param name="metadata"></param>
-    /// <param name="bundleManifest"></param>
     /// <param name="progress"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<InstalledBundle> InstallBundleAsync(
         Metadata metadata,
-        BundleManifest bundleManifest,
         IAdvancedProgress? progress,
         CancellationToken cancellationToken);
 

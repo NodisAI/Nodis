@@ -5,6 +5,7 @@ namespace Nodis.Core.Models;
 
 [YamlObject]
 [YamlObjectUnion("!mcp", typeof(McpBundleRuntimeConfiguration))]
+[YamlObjectUnion("!api", typeof(ApiBundleRuntimeConfiguration))]
 public abstract partial record BundleRuntimeConfiguration
 {
     /// <summary>
@@ -43,6 +44,8 @@ public enum BundleRuntimeType
     ClientSide,
 }
 
+#region MCP
+
 [YamlObject]
 public partial record McpBundleRuntimeConfiguration : BundleRuntimeConfiguration
 {
@@ -66,3 +69,25 @@ public partial record StdioMcpTransportConfiguration(
 public partial record SseMcpTransportConfiguration(
     [property: YamlMember("url")] string Url,
     [property: YamlMember("headers")] IReadOnlyDictionary<string, ValueWithDescription<string>>? Headers = null) : McpTransportConfiguration;
+
+#endregion
+
+#region API
+
+[YamlObject]
+public partial record ApiBundleRuntimeConfiguration : BundleRuntimeConfiguration
+{
+    [YamlMember("transport")]
+    public required ApiTransportConfiguration TransportConfiguration { get; init; }
+}
+
+[YamlObject]
+[YamlObjectUnion("!rest", typeof(RestApiTransportConfiguration))]
+public abstract partial record ApiTransportConfiguration;
+
+[YamlObject]
+public partial record RestApiTransportConfiguration(
+    [property: YamlMember("url")] string Url,
+    [property: YamlMember("headers")] IReadOnlyDictionary<string, ValueWithDescription<string>>? Headers = null) : ApiTransportConfiguration;
+
+#endregion

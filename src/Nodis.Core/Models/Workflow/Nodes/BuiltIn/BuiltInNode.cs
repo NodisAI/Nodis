@@ -1,4 +1,5 @@
 ﻿using MessagePack;
+using Nodis.Core.Interfaces;
 using VYaml.Annotations;
 
 namespace Nodis.Core.Models.Workflow;
@@ -23,4 +24,13 @@ namespace Nodis.Core.Models.Workflow;
 [Union(6, typeof(SerializerNode))]
 [Union(7, typeof(TriggerNode))]
 [Union(8, typeof(VariableNode))]
-public abstract partial class BuiltInNode : Node;
+public abstract partial class BuiltInNode : Node, INamedObject
+{
+    [YamlIgnore]
+    [IgnoreMember]
+    public abstract string Name { get; }
+
+    [YamlIgnore]
+    [IgnoreMember]
+    public string? Description { get; set; }
+}

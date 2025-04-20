@@ -77,7 +77,9 @@ public class NodePropertyList<T> : ObservableList<T> where T : NodeMember
         property.Id = property.Id switch
         {
             0 => owner.GetAvailableMemberId(),
-            _ => ContainsId(owner.Id) ? throw new InvalidOperationException($"Property with id '{property.Id}' already exists") : property.Id
+            _ => this.Count(x => x.Id == property.Id) > 1 ?
+                throw new InvalidOperationException($"Property with id '{property.Id}' already exists") :
+                property.Id
         };
         property.Owner = owner;
     }

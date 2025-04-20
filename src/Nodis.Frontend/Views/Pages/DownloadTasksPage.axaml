@@ -35,7 +35,7 @@
                             Width="{Binding $self.Bounds.Height}"
                             Margin="0,0,8,0"
                             Content="{Binding Icon}"
-                            IsVisible="{Binding !!Icon}"/>
+                            IsVisible="{Binding Icon, Converter={x:Static ObjectConverters.IsNotNull}}"/>
 
                         <StackPanel
                             Grid.Column="1" Orientation="Vertical"

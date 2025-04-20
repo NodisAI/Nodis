@@ -27,22 +27,6 @@ public abstract partial class Node : ObservableObject
     [IgnoreMember]
     public WorkflowContext? Owner { get; internal set; }
 
-    /// <summary>
-    /// The name of the node, displaying to the user.
-    /// </summary>
-    /// TODO: I18N
-    [YamlIgnore]
-    [IgnoreMember]
-    public abstract string Name { get; }
-
-    /// <summary>
-    /// The description of the node, displaying to the user.
-    /// </summary>
-    /// TODO: I18N
-    [YamlIgnore]
-    [IgnoreMember]
-    public virtual string? Description => null;
-
     [IgnoreMember]
     private readonly NetworkObjectTracker tracker;
 
@@ -132,12 +116,11 @@ public abstract partial class Node : ObservableObject
     }
 
     [Obsolete("Only for serialization")]
-    [YamlMember("data_inputs")]
+    [YamlMember("input_values")]
     [Key(7)]
-    protected IReadOnlyDictionary<string, object?> DataInputsValues
+    protected IReadOnlyDictionary<string, object?> DataInputValues
     {
-        get => DataInputs.Where(
-                p => p is { CanUserInput: true, Data.Type: not NodeDataType.Object and not NodeDataType.Stream })
+        get => DataInputs.Where(p => p is { CanUserInput: true, Data.Type: not NodeDataType.Object and not NodeDataType.Stream })
             .ToFrozenDictionary(p => p.Name, p => p.Data.Value);
         init
         {
