@@ -1,4 +1,6 @@
-﻿namespace Nodis.Backend.Interfaces;
+﻿using XtermSharp;
+
+namespace Nodis.Backend.Interfaces;
 
 public interface IProcess
 {
@@ -9,6 +11,8 @@ public interface IProcess
     StreamReader StandardError { get; }
 
     bool HasExited { get; }
+
+    Terminal CreateTerminal();
 
     Task StartAsync(CancellationToken cancellationToken);
 

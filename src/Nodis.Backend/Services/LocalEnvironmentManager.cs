@@ -8,6 +8,7 @@ using Nodis.Backend.Models.Mcp;
 using Nodis.Core.Extensions;
 using Nodis.Core.Interfaces;
 using Nodis.Core.Models;
+using Nodis.Core.Models.Workflow;
 using VYaml.Serialization;
 
 namespace Nodis.Backend.Services;
@@ -203,12 +204,14 @@ public class LocalEnvironmentManager(
     private async ValueTask ExecuteInstallOperationAsync(
         string runtimeFolderPath,
         RuntimeInstallOperation operation,
+        IAdvancedProgress? progress,
         CancellationToken cancellationToken)
     {
         switch (operation)
         {
             case BashRuntimeInstallOperation bashRuntimeInstallOperation:
             {
+                progress?.Report(string.Join('\n', bashRuntimeInstallOperation.CommandLines));
                 var process = nativeInterop.CreateProcess(
                     new BashProcessCreationOptions
                     {
@@ -236,8 +239,15 @@ public class LocalEnvironmentManager(
         }
     }
 
-    public async Task<InstalledBundle> InstallBundleAsync(Metadata metadata, BundleManifest bundleManifest, CancellationToken cancellationToken)
+    public async Task<InstalledBundle> InstallBundleAsync(
+        Metadata metadata,
+        BundleManifest bundleManifest,
+        IAdvancedProgress? progress,
+        CancellationToken cancellationToken)
     {
+        var progressValue = 0d;
+        progress?.Report(progressValue, "Reading bundle manifest...");
+
         // e.g. $(UserProfile)/nodis/bundles/nodisai.main/notion/1.0.0
         var installationFolderPath = Path.Combine(
             BundlesFolderPath,
@@ -250,22 +260,29 @@ public class LocalEnvironmentManager(
             await TryReadInstalledBundle() is { } installedBundle) return installedBundle;
 
         Directory.CreateDirectory(installationFolderPath);
+        progress?.Report(progressValue += 10d, "Installing runtimes...");
 
+        // install runtime (10% - 99%)
+        var progressPerRuntime = 89d / bundleManifest.Runtimes.Count;
         var runtimesFolderPath = Path.Combine(installationFolderPath, "runtimes");
         foreach (var runtime in bundleManifest.Runtimes)
         {
             var runtimeFolderPath = Path.Combine(runtimesFolderPath, runtime.Id);
             Directory.CreateDirectory(runtimeFolderPath);
 
+            var progressPerStep = progressPerRuntime / (runtime.PreInstalls?.Count ?? 0d + runtime.PostInstalls?.Count ?? 0d + 1);
+
             // todo: BundleRuntimeType
             if (runtime.PreInstalls != null)
             {
                 foreach (var preInstall in runtime.PreInstalls)
                 {
-                    await ExecuteInstallOperationAsync(runtimeFolderPath, preInstall, cancellationToken);
+                    await ExecuteInstallOperationAsync(runtimeFolderPath, preInstall, progress, cancellationToken);
+                    progress?.Report(progressValue += progressPerStep);
                 }
             }
 
+            var bundleNodes = new List<BundleNode>();
             switch (runtime)
             {
                 case McpBundleRuntimeConfiguration mcp:
@@ -289,7 +306,7 @@ public class LocalEnvironmentManager(
                                 new NativeInteropClientTransportOptions
                                 {
                                     Command = stdio.Command,
-                                    Arguments = stdio.Auguments,
+                                    Arguments = stdio.Arguments,
                                     WorkingDirectory = Path.Combine(runtimeFolderPath, stdio.WorkingDirectory ?? string.Empty),
                                     EnvironmentVariables = environmentVariables
                                 },
@@ -322,21 +339,40 @@ public class LocalEnvironmentManager(
                         }
                     }
 
+                    await Task.Delay(10000000);
+
                     var client = await McpClientFactory.CreateAsync(clientTransport, cancellationToken: cancellationToken);
                     var tools = await client.ListToolsAsync(cancellationToken: cancellationToken);
+                    var response = await client.CallToolAsync(
+                        "playwright_navigate",
+                        new Dictionary<string, object?>
+                        {
+                            { "url", "https://github.com/xoofx/markdig/pull/201/commits" }
+                        },
+                        cancellationToken: cancellationToken);
+                    response = await client.CallToolAsync(
+                        "playwright_screenshot",
+                        new Dictionary<string, object?>
+                        {
+                            { "name", "11" }
+                        },
+                        cancellationToken: cancellationToken);
                     break;
                 }
             }
+            progress?.Report(progressValue += progressPerStep);
 
             if (runtime.PostInstalls != null)
             {
                 foreach (var postInstall in runtime.PostInstalls)
                 {
-                    await ExecuteInstallOperationAsync(runtimeFolderPath, postInstall, cancellationToken);
+                    await ExecuteInstallOperationAsync(runtimeFolderPath, postInstall, progress, cancellationToken);
+                    progress?.Report(progressValue += progressPerStep);
                 }
             }
         }
 
+        progress?.Report(99d, "Saving changes...");
         installedBundle = new InstalledBundle(bundleManifest, []);
         await using var outputStream = fileInfo.Create();
         await outputStream.WriteAsync(YamlSerializer.Serialize(installedBundle), cancellationToken);

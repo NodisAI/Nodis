@@ -32,6 +32,12 @@ public static class AvaloniaAppExtension
             .AddSingleton<MarketplacePageViewModel>()
             .AddSingleton<IMainWindowPage, MarketplacePage>();
 
+        serviceCollection
+            .AddSingleton<DownloadTasksPageViewModel>()
+            .AddSingleton<DownloadTasksPage>()
+            .AddSingleton<IMainWindowPage>(x => x.GetRequiredService<DownloadTasksPage>())
+            .AddSingleton<IDownloadTasksManager>(x => x.GetRequiredService<DownloadTasksPageViewModel>());
+
         #endregion
 
         serviceCollection

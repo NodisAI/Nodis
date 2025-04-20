@@ -10,6 +10,7 @@ using Nodis.Backend.Interfaces;
 using Nodis.Core.Extensions;
 using Nodis.Core.Interfaces;
 using Nodis.Core.Models;
+using XtermSharp;
 
 namespace Nodis.Backend.Services;
 
@@ -85,11 +86,30 @@ public class WindowsNativeInterop : INativeInterop
         protected readonly Process process = process;
         protected readonly ProcessCreationOptions options = options;
         private bool isStarted;
+        private Terminal? terminal;
 
         public StreamWriter StandardInput => process.StandardInput;
         public StreamReader StandardOutput => process.StandardOutput;
         public StreamReader StandardError => process.StandardError;
         public bool HasExited => process.HasExited;
+
+        public Terminal CreateTerminal()
+        {
+            if (terminal != null) return terminal;
+
+            terminal = new Terminal();
+            Task.Run(
+                async () =>
+                {
+                    var buffer = new byte[1024];
+                    int bytesRead;
+                    while (StandardOutput.BaseStream.CanRead && (bytesRead = await StandardOutput.BaseStream.ReadAsync(buffer.AsMemory())) > 0)
+                    {
+                        terminal?.Feed(buffer[..bytesRead]);
+                    }
+                });
+            return terminal;
+        }
 
         public virtual Task StartAsync(CancellationToken cancellationToken)
         {
@@ -99,7 +119,8 @@ public class WindowsNativeInterop : INativeInterop
                     process.Start();
                     if (options.KillOnExit) ChildProcessTracker.AddProcess(process);
                     isStarted = true;
-                }, cancellationToken);
+                },
+                cancellationToken);
         }
 
         public async Task<int> WaitForExitAsync(CancellationToken cancellationToken)

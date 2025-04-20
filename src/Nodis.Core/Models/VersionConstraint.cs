@@ -1,24 +1,35 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
+using MessagePack;
+using VYaml.Annotations;
 using VYaml.Emitter;
 using VYaml.Parser;
 using VYaml.Serialization;
 
 namespace Nodis.Core.Models;
 
+[YamlObject]
+[MessagePackObject]
 public partial record struct SemanticVersion : IComparable<SemanticVersion>
 {
     public static IReadOnlyList<string> SpecialVersions => SpecialVersionsArray;
     private static readonly string[] SpecialVersionsArray = ["latest", "prerelease", "stable"];
 
-    public int Major { get; }
-    public int Minor { get; }
-    public int Patch { get; }
-    public string? Prerelease { get; }
-    public string? Build { get; }
-    public string? Special { get; }
-    [MemberNotNullWhen(true, nameof(Special))] public bool IsSpecial => Special != null;
+    [YamlMember("major")] [Key(0)] public int Major { get; init; }
+    [YamlMember("minor")] [Key(1)] public int Minor { get; init; }
+    [YamlMember("patch")] [Key(2)] public int Patch { get; init; }
+    [YamlMember("prerelease")] [Key(3)] public string? Prerelease { get; init; }
+    [YamlMember("build")] [Key(4)] public string? Build { get; init; }
+    [YamlMember("special")] [Key(5)] public string? Special { get; init; }
+
+    [YamlIgnore]
+    [IgnoreMember]
+    [MemberNotNullWhen(true, nameof(Special))]
+    public bool IsSpecial => Special != null;
+
+    [YamlConstructor]
+    public SemanticVersion() { }
 
     public SemanticVersion(int major, int minor, int patch, string? prerelease, string? build)
     {

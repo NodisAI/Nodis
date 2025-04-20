@@ -42,5 +42,9 @@
         <DependentUpon>NodeDataInput.axaml</DependentUpon>
         <SubType>Code</SubType>
       </Compile>
+      <Compile Update="Views\Pages\DownloadTasksPage.axaml.cs">
+        <DependentUpon>DownloadTasksPage.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
     </ItemGroup>
 </Project>

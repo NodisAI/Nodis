@@ -1,13 +1,14 @@
 <v:ReactiveSukiWindow
     x:Class="Nodis.Frontend.Views.MainWindow" xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ip="https://github.com/MahApps/IconPacks.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:suki="https://github.com/kikipoulet/SukiUI"
-    xmlns:v="clr-namespace:Nodis.Frontend.Views" xmlns:vm="using:Nodis.Frontend.ViewModels"
-    d:DesignHeight="450" d:DesignWidth="800"
-    Title="Nodis" x:DataType="vm:MainWindowViewModel"
-    x:TypeArguments="vm:MainWindowViewModel" Icon="/Assets/avalonia-logo.ico"
-    TitleFontSize="18" TitleFontWeight="Bold"
-    mc:Ignorable="d">
+    xmlns:v="clr-namespace:Nodis.Frontend.Views" xmlns:vc="clr-namespace:Nodis.Frontend.ValueConverters"
+    xmlns:vm="using:Nodis.Frontend.ViewModels" d:DesignHeight="450"
+    d:DesignWidth="800" Title="Nodis"
+    x:DataType="vm:MainWindowViewModel" x:TypeArguments="vm:MainWindowViewModel"
+    Icon="/Assets/avalonia-logo.ico" TitleFontSize="18"
+    TitleFontWeight="Bold" mc:Ignorable="d">
 
     <Design.DataContext>
         <vm:MainWindowViewModel/>
@@ -21,5 +22,33 @@
     <suki:SukiSideMenu
         Background="Transparent" IsMenuExpanded="False"
         ItemsSource="{Binding Pages}"
-        SplitViewDisplayMode="CompactOverlay"/>
+        SplitViewDisplayMode="CompactOverlay">
+        <!-- <suki:SukiSideMenu.FooterContent> -->
+        <!--     <StackPanel Orientation="Vertical"> -->
+        <!--  <suki:InfoBadge  -->
+        <!--  Appearance="Information"  -->
+        <!--  Header="{Binding DownloadTasksPage.ViewModel.DownloadTasks.Count}"  -->
+        <!--  IsHeaderVisible="{Binding DownloadTasksPage.ViewModel.DownloadTasks, Converter={x:Static vc:CollectionConverters.IsNotEmpty}}">  -->
+        <!--  <Button  -->
+        <!--  x:Name="DownloadTasksButton" Padding="4"  -->
+        <!--  HorizontalAlignment="Left" BorderThickness="0">  -->
+        <!--  <ip:PackIconEvaIcons  -->
+        <!--  Width="24" Height="24"  -->
+        <!--  Kind="DownloadOutline"/>  -->
+        <!--    -->
+        <!--                 <Button.Flyout> -->
+        <!--                     <Flyout Placement="LeftEdgeAlignedBottom"> -->
+        <!--  <Border  -->
+        <!--  Width="300" Height="600"  -->
+        <!--  Background="{DynamicResource SukiGlassCardOpaqueBackground}"  -->
+        <!--  CornerRadius="8">  -->
+        <!--                             <ContentPresenter Content="{Binding DownloadTasksPage}"/> -->
+        <!--                         </Border> -->
+        <!--                     </Flyout> -->
+        <!--                 </Button.Flyout> -->
+        <!--             </Button> -->
+        <!--         </suki:InfoBadge> -->
+        <!--     </StackPanel> -->
+        <!-- </suki:SukiSideMenu.FooterContent> -->
+    </suki:SukiSideMenu>
 </v:ReactiveSukiWindow>

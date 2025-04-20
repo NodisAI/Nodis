@@ -1,11 +1,14 @@
-﻿using VYaml.Annotations;
+﻿using MessagePack;
+using VYaml.Annotations;
 
 namespace Nodis.Core.Models.Workflow;
 
 [YamlObject]
+[MessagePackObject(AllowPrivate = true)]
 public partial class LoopNode : BuiltInNode
 {
     [YamlIgnore]
+    [IgnoreMember]
     public override string Name => "Loop";
 
     public LoopNode()

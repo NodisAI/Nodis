@@ -2,6 +2,7 @@
 using IconPacks.Avalonia.EvaIcons;
 using Microsoft.Extensions.DependencyInjection;
 using Nodis.Frontend.Interfaces;
+using Nodis.Frontend.Views;
 using ObservableCollections;
 using SukiUI.Controls;
 
@@ -14,6 +15,8 @@ public class MainWindowViewModel(IServiceProvider serviceProvider) : ReactiveVie
         field ??= pages.ToNotifyCollectionChanged(SynchronizationContextCollectionEventDispatcher.Current);
 
     private readonly ObservableList<SukiSideMenuItem> pages = [];
+
+    public DownloadTasksPage DownloadTasksPage { get; } = serviceProvider.GetRequiredService<DownloadTasksPage>();
 
     protected internal override Task ViewLoaded(CancellationToken cancellationToken)
     {

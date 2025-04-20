@@ -11,138 +11,212 @@
     <Grid ColumnDefinitions="1*,3*" RowDefinitions="Auto,*">
         <DockPanel
             Grid.Row="0" Grid.Column="0"
-            Grid.ColumnSpan="2" Height="36"
-            Margin="5" LastChildFill="True">
+            Height="36" Margin="5,5,0,5"
+            LastChildFill="True">
             <Button
-                DockPanel.Dock="Left" VerticalAlignment="Stretch"
-                Classes="Flat"
+                DockPanel.Dock="Left" Padding="8,4"
+                VerticalAlignment="Stretch"
                 Command="{Binding RefreshSourcesCommand}">
-                <StackPanel Orientation="Horizontal" Spacing="4">
-                    <ip:PackIconEvaIcons
-                        Width="12" Height="12"
-                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                        Kind="Refresh"/>
-                    <TextBlock VerticalAlignment="Center" Text="Refresh"/>
-                </StackPanel>
+                <ip:PackIconEvaIcons
+                    Width="16" Height="16"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Kind="Refresh"/>
             </Button>
             <TextBox
                 MinHeight="32" Margin="5,0,0,0"
                 VerticalAlignment="Stretch" suki:TextBoxExtensions.AddDeleteButton="True"
                 Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                Watermark="Search Nodes"/>
+                Watermark="Search in Marketplace"/>
         </DockPanel>
 
         <suki:GlassCard
             Grid.Row="1" Grid.Column="0"
             Margin="5,0,0,5" Padding="0"
             CornerRadius="8">
-            <ListBox
-                Classes="Compact"
-                ItemsSource="{Binding Bundles}"
-                SelectedItem="{Binding SelectedBundle}">
-                <ListBox.Styles>
-                    <Style Selector="TextBlock">
-                        <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
-                    </Style>
+            <suki:BusyArea IsBusy="{Binding IsBusy}">
+                <ListBox
+                    Classes="Compact"
+                    ItemsSource="{Binding Bundles}"
+                    SelectedItem="{Binding SelectedBundle}">
+                    <ListBox.Styles>
+                        <Style Selector="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
+                        </Style>
 
-                    <Style Selector="ListBoxItem">
-                        <Setter Property="Background" Value="Transparent"/>
-                        <Setter Property="Padding" Value="4,2"/>
-                        <Setter Property="Template">
-                            <ControlTemplate>
-                                <Border
-                                    Name="BorderBasicStyle" Margin="0"
-                                    Padding="8,4" CornerRadius="8">
-                                    <ContentPresenter
-                                        Name="PART_ContentPresenter" Margin="0,0,0,0"
-                                        Padding="{TemplateBinding Padding}"
-                                        HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                        Background="Transparent" BorderBrush="Transparent"
-                                        BorderThickness="{TemplateBinding BorderThickness}"
-                                        Content="{TemplateBinding Content}"
-                                        ContentTemplate="{TemplateBinding ContentTemplate}"
-                                        CornerRadius="{TemplateBinding CornerRadius}"/>
-                                </Border>
-                            </ControlTemplate>
-                        </Setter>
-                    </Style>
-                </ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Padding" Value="4,2"/>
+                            <Setter Property="Template">
+                                <ControlTemplate>
+                                    <Border
+                                        Name="BorderBasicStyle" Margin="0"
+                                        Padding="8,4" CornerRadius="8">
+                                        <ContentPresenter
+                                            Name="PART_ContentPresenter" Margin="0,0,0,0"
+                                            Padding="{TemplateBinding Padding}"
+                                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                            Background="Transparent" BorderBrush="Transparent"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            Content="{TemplateBinding Content}"
+                                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                                            CornerRadius="{TemplateBinding CornerRadius}"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter>
+                        </Style>
+                    </ListBox.Styles>
 
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Grid ColumnDefinitions="32,*" RowDefinitions="32,*">
-                            <Image
-                                Grid.Row="0" Grid.Column="0"
-                                ail:ImageLoader.Source="{Binding BundleManifest.Icon, Mode=OneWay}"/>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="32,*" RowDefinitions="32,*">
+                                <Image
+                                    Grid.Row="0" Grid.Column="0"
+                                    ail:ImageLoader.Source="{Binding BundleManifest.Icon, Mode=OneWay}"/>
 
-                            <TextBlock
-                                Grid.Row="0" Grid.Column="1"
-                                Margin="8,0,0,0" VerticalAlignment="Center"
-                                Classes="h4"
-                                Text="{Binding Title}"/>
-                            <TextBlock
-                                Grid.Row="1" Grid.Column="0"
-                                Grid.ColumnSpan="2" Margin="0,4,0,0"
-                                Classes="h5" MaxLines="3"
-                                Text="{Binding BundleManifest.Description}"
-                                TextTrimming="{x:Static TextTrimming.CharacterEllipsis}"
-                                TextWrapping="Wrap"/>
-                        </Grid>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+                                <TextBlock
+                                    Classes="h4" Grid.Row="0"
+                                    Grid.Column="1" Margin="8,0,0,0"
+                                    VerticalAlignment="Center"
+                                    Text="{Binding Title}"/>
+                                <TextBlock
+                                    Classes="h6" Grid.Row="1"
+                                    Grid.Column="0" Grid.ColumnSpan="2"
+                                    Margin="0,4,0,0" MaxLines="3"
+                                    Text="{Binding BundleManifest.Description}"
+                                    TextTrimming="{x:Static TextTrimming.CharacterEllipsis}"
+                                    TextWrapping="Wrap"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </suki:BusyArea>
         </suki:GlassCard>
 
         <suki:GlassCard
-            Grid.Row="1" Grid.Column="1"
-            Margin="5,0,5,5" Padding="0"
-            CornerRadius="8">
-            <Grid RowDefinitions="*,1,Auto">
-                <ScrollViewer
-                    Grid.Row="0" HorizontalScrollBarVisibility="Disabled"
-                    VerticalScrollBarVisibility="Auto">
-                    <v:MarkdownViewer Margin="5,0" Markdown="{Binding SelectedBundle.ReadmeMarkdown.Value, FallbackValue={x:Null}}"/>
-                </ScrollViewer>
+            Grid.Row="0" Grid.RowSpan="2"
+            Grid.Column="1" MaxWidth="1200"
+            Margin="5" Padding="16"
+            CornerRadius="8"
+            IsVisible="{Binding SelectedBundle, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <DockPanel LastChildFill="True">
+                <Grid
+                    DockPanel.Dock="Top" ColumnDefinitions="Auto,*"
+                    RowDefinitions="Auto,*,Auto,17">
+                    <Image
+                        Grid.Row="0" Grid.RowSpan="3"
+                        Grid.Column="0" Width="128"
+                        Height="128" Margin="0,0,16,0"
+                        VerticalAlignment="Top"
+                        ail:ImageLoader.Source="{Binding SelectedBundle.BundleManifest.Icon, Mode=OneWay, FallbackValue={x:Null}}"/>
 
-                <Border Grid.Row="1" Background="{DynamicResource SukiControlBorderBrush}"/>
+                    <TextBlock
+                        Grid.Row="0" Grid.Column="1"
+                        FontSize="24" FontWeight="Bold"
+                        Text="{Binding SelectedBundle.Title, FallbackValue={x:Null}}"/>
 
-                <StackPanel
-                    Grid.Row="2" Height="48"
-                    HorizontalAlignment="Right" Orientation="Horizontal">
-                    <ComboBox
-                        MinWidth="120" Margin="0,5"
-                        VerticalAlignment="Stretch"
-                        IsEnabled="{Binding SelectedBundle, Converter={x:Static ObjectConverters.IsNotNull}}"
-                        ItemsSource="{Binding SelectedBundle.Versions, FallbackValue={x:Null}}"
-                        SelectedItem="{Binding SelectedBundle.SelectedVersion, FallbackValue={x:Null}}"/>
+                    <TextBlock
+                        Grid.Row="1" Grid.Column="1"
+                        Margin="0,8"
+                        Text="{Binding SelectedBundle.BundleManifest.Description, FallbackValue={x:Null}}"
+                        TextTrimming="{x:Static TextTrimming.WordEllipsis}"
+                        TextWrapping="Wrap"/>
 
-                    <Button
-                        Margin="5" Padding="8,2"
-                        VerticalAlignment="Stretch" Classes="Flat"
-                        Command="{Binding EditBundleEnvironmentVariablesCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <ip:PackIconEvaIcons
-                                Width="12" Height="12"
-                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                Kind="Hash"/>
-                            <TextBlock VerticalAlignment="Center" Text="Edit Environment Variables"/>
-                        </StackPanel>
-                    </Button>
+                    <StackPanel
+                        Grid.Row="2" Grid.Column="1"
+                        Height="36" Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" Text="Select Version"/>
 
-                    <Button
-                        Margin="0,5,5,5" Padding="8,2"
-                        VerticalAlignment="Stretch" Classes="Flat"
-                        Command="{Binding InstallBundleCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <ip:PackIconEvaIcons
-                                Width="12" Height="12"
-                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                Kind="Download"/>
-                            <TextBlock VerticalAlignment="Center" Text="Install"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </Grid>
+                        <ComboBox
+                            MinWidth="120" Margin="4,4,0,4"
+                            VerticalAlignment="Stretch"
+                            IsEnabled="{Binding SelectedBundle, Converter={x:Static ObjectConverters.IsNotNull}}"
+                            ItemsSource="{Binding SelectedBundle.Versions, FallbackValue={x:Null}}"
+                            SelectedItem="{Binding SelectedVersion, Mode=TwoWay}"/>
+
+                        <Button
+                            Classes="Flat" Margin="8,4,0,4"
+                            Padding="8,2" VerticalAlignment="Stretch"
+                            Command="{Binding InstallBundleCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <ip:PackIconEvaIcons
+                                    Width="12" Height="12"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Kind="Download"/>
+                                <TextBlock VerticalAlignment="Center" Text="Install"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <Border
+                        Grid.Row="3" Grid.Column="0"
+                        Grid.ColumnSpan="2" Height="1"
+                        VerticalAlignment="Center"
+                        Background="{DynamicResource SukiBorderBrush}"/>
+                </Grid>
+
+                <TabControl>
+                    <TabItem Header="Details">
+                        <Grid Margin="0,16,0,0" ColumnDefinitions="3*,*">
+                            <ScrollViewer
+                                Grid.Column="0" HorizontalScrollBarVisibility="Disabled"
+                                VerticalScrollBarVisibility="Auto">
+                                <v:MarkdownViewer
+                                    Margin="5,0"
+                                    Markdown="{Binding SelectedBundle.ReadmeMarkdown.Value, FallbackValue={x:Null}}"
+                                    UrlRoot="{Binding SelectedBundle.ReadmeMarkdownUrlRoot, FallbackValue={x:Null}}"/>
+                            </ScrollViewer>
+
+                            <StackPanel
+                                Grid.Column="1" Margin="8,0,0,0"
+                                Orientation="Vertical" Spacing="4">
+                                <TextBlock Classes="h4" Text="License"/>
+                                <TextBlock Text="{Binding SelectedBundle.BundleManifest.License, FallbackValue={x:Null}}"/>
+
+                                <Border
+                                    Height="1" Margin="0,4"
+                                    Background="{DynamicResource SukiBorderBrush}"/>
+
+                                <TextBlock Classes="h4" Text="Tags"/>
+                                <ListBox ItemsSource="{Binding SelectedBundle.BundleManifest.Tags, FallbackValue={x:Null}}">
+                                    <ListBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Margin="-4"/>
+                                        </ItemsPanelTemplate>
+                                    </ListBox.ItemsPanel>
+
+                                    <ListBox.Styles>
+                                        <Style Selector="ListBoxItem">
+                                            <Setter Property="Template">
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border
+                                                        Margin="4"
+                                                        BorderBrush="{DynamicResource SukiBorderBrush}"
+                                                        BorderThickness="1" CornerRadius="4">
+                                                        <TextBlock
+                                                            Margin="4,2"
+                                                            Foreground="{DynamicResource SukiText}"
+                                                            Text="{Binding}"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter>
+                                        </Style>
+                                    </ListBox.Styles>
+                                </ListBox>
+                            </StackPanel>
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem Header="Configuration">
+                        <ItemsControl Margin="0,16,0,0" ItemsSource="{Binding SelectedBundle.EnvironmentVariables, FallbackValue={x:Null}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <v:ValueWithDescriptionInput ValueWithDescription="{Binding}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </TabItem>
+                </TabControl>
+            </DockPanel>
         </suki:GlassCard>
     </Grid>
 </v:ReactiveUserControl>

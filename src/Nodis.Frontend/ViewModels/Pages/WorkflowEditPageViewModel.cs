@@ -44,12 +44,7 @@ public partial class WorkflowEditPageViewModel(
                     .ToAsyncEnumerable()
                     .SelectAwait(m => environmentManager.LoadInstalledBundleAsync(m, cancellationToken).ToValueTask())
                     .SelectMany(m => m.Nodes.ToAsyncEnumerable())
-                    .Select(
-                        n =>
-                        {
-                            n.Namespace = @namespace;
-                            return new NodeTemplate(n.Name, PackIconEvaIconsKind.None, n.Clone);
-                        })
+                    .Select(n => new NodeTemplate(n.Name, PackIconEvaIconsKind.None, n.Clone))
                     .ToListAsync(cancellationToken: cancellationToken)));
         }
 

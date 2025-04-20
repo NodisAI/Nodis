@@ -1,15 +1,19 @@
 ﻿using CommunityToolkit.Mvvm.Input;
+using MessagePack;
 using VYaml.Annotations;
 
 namespace Nodis.Core.Models.Workflow;
 
 [YamlObject]
+[MessagePackObject(AllowPrivate = true)]
 public partial class VariableNode : BuiltInNode
 {
     [YamlIgnore]
+    [IgnoreMember]
     public override string Name => "Variable";
 
     [YamlMember("items")]
+    [Key(12)]
     private IEnumerable<WorkflowConstantNodeYamlItem> YamlItems
     {
         get => Properties.Select(p => new WorkflowConstantNodeYamlItem(p.Name, p.Data));
@@ -68,5 +72,8 @@ public partial class VariableNode : BuiltInNode
 }
 
 [YamlObject]
+[MessagePackObject(AllowPrivate = true)]
 // TODO: I hope VYaml can supports nested type serialization so that this can be well encapsulated
-public partial record struct WorkflowConstantNodeYamlItem(string Name, NodeData Data);
+public partial record struct WorkflowConstantNodeYamlItem(
+    [property: Key(0)] string Name,
+    [property: Key(1)] NodeData Data);

@@ -1,11 +1,14 @@
-﻿using VYaml.Annotations;
+﻿using MessagePack;
+using VYaml.Annotations;
 
 namespace Nodis.Core.Models.Workflow;
 
 [YamlObject]
+[MessagePackObject(AllowPrivate = true)]
 public partial class DelayNode : BuiltInNode
 {
     [YamlIgnore]
+    [IgnoreMember]
     public override string Name => "Delay";
 
     public DelayNode()

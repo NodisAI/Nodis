@@ -1,17 +1,21 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
+using AsyncImageLoader;
 using Avalonia.Controls;
-using Avalonia.Controls.Templates;
-using Avalonia.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Nodis.Frontend.Views;
 using ObservableCollections;
-using SukiUI.Controls;
 
 namespace Nodis.Frontend.ViewModels;
 
-public partial class MarketplacePageViewModel(IEnvironmentManager environmentManager) : BusyViewModelBase
+public partial class MarketplacePageViewModel(
+    IEnvironmentManager environmentManager,
+    IDownloadTasksManager downloadTasksManager
+) : BusyViewModelBase
 {
+    [ObservableProperty]
+    public partial string? SearchText { get; set; }
+
     [field: AllowNull, MaybeNull]
     public NotifyCollectionChangedSynchronizedViewList<BundleWrapper> Bundles =>
         field ??= bundles.ToNotifyCollectionChanged(SynchronizationContextCollectionEventDispatcher.Current);
@@ -19,15 +23,27 @@ public partial class MarketplacePageViewModel(IEnvironmentManager environmentMan
     private readonly ObservableList<BundleWrapper> bundles = [];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsBundleSelected))]
-    [NotifyCanExecuteChangedFor(nameof(EditBundleEnvironmentVariablesCommand))]
+    [NotifyPropertyChangedFor(nameof(SelectedVersion))]
+    [NotifyPropertyChangedFor(nameof(CanInstallBundle))]
     [NotifyCanExecuteChangedFor(nameof(InstallBundleCommand))]
     public partial BundleWrapper? SelectedBundle { get; set; }
 
-    public bool IsBundleSelected => SelectedBundle is not null;
+    public VersionWrapper? SelectedVersion
+    {
+        get => SelectedBundle?.SelectedVersion;
+        set
+        {
+            if (SelectedBundle == null) return;
+            if (value != null) SelectedBundle.SelectedVersion = value;
+            else OnPropertyChanged();
+            OnPropertyChanged(nameof(CanInstallBundle));
+            InstallBundleCommand.NotifyCanExecuteChanged();
+        }
+    }
 
-    [ObservableProperty]
-    public partial string? SearchText { get; set; }
+    private readonly Dictionary<Metadata, DownloadTask> downloadTasks = new();
+
+    public bool IsSelectedBundleDownloading => SelectedBundle is not null && downloadTasks.ContainsKey(SelectedBundle.Metadata);
 
     [RelayCommand]
     private Task RefreshSources(CancellationToken cancellationToken) => ExecuteBusyTaskAsync(
@@ -39,75 +55,78 @@ public partial class MarketplacePageViewModel(IEnvironmentManager environmentMan
         DialogExceptionHandler,
         cancellationToken: cancellationToken);
 
-    [RelayCommand(CanExecute = nameof(IsBundleSelected))]
-    private Task EditBundleEnvironmentVariablesAsync()
-    {
-        if (SelectedBundle is not { } selectedNode) return Task.CompletedTask;
+    public bool CanInstallBundle => SelectedVersion is { IsInstalled: false };
 
-        var valueWithDescriptions = new List<ValueWithDescriptionBase>();
-        foreach (var runtime in selectedNode.BundleManifest.Runtimes)
-        {
-            switch (runtime)
+    [RelayCommand(CanExecute = nameof(CanInstallBundle))]
+    private async Task InstallBundleAsync()
+    {
+        if (SelectedBundle is not { } selectedBundle ||
+            SelectedVersion is not { } selectedVersion) return;
+        if (IsSelectedBundleDownloading) return;
+
+        var metadata = selectedBundle.Metadata with { Version = selectedVersion.Version };
+        var cancellationTokenSource = new CancellationTokenSource();
+        var downloadTask = new DownloadTask($"{selectedBundle.Title} ({metadata.Version})");
+        downloadTask.DeleteCommand = new RelayCommand(
+            () =>
             {
-                case McpBundleRuntimeConfiguration { TransportConfiguration: StdioMcpTransportConfiguration { EnvironmentVariables: { } stdioEnvs } }:
-                {
-                    stdioEnvs.ForEach(p => valueWithDescriptions.Add(p.Value));
-                    break;
-                }
-                case McpBundleRuntimeConfiguration { TransportConfiguration: SseMcpTransportConfiguration { Headers: { } sseHeaders } }:
-                {
-                    sseHeaders.ForEach(p => valueWithDescriptions.Add(p.Value));
-                    break;
-                }
+                cancellationTokenSource.Cancel();
+                downloadTask.Status = DownloadTaskStatus.Canceled;
+                downloadTasksManager.Remove(downloadTask);
+            });
+        if (Uri.TryCreate(selectedBundle.BundleManifest.Icon, UriKind.Absolute, out var iconUri))
+        {
+            downloadTask.Icon = new Image
+            {
+                Source = await ImageLoader.AsyncImageLoader.ProvideImageAsync(iconUri.ToString())
+            };
+        }
+        downloadTasks.Add(metadata, downloadTask);
+        downloadTasksManager.Add(downloadTask);
+        InstallBundleInternalAsync();
+
+        async void InstallBundleInternalAsync()
+        {
+            try
+            {
+                downloadTask.Status = DownloadTaskStatus.InProgress;
+                await environmentManager.InstallBundleAsync(
+                    metadata,
+                    selectedBundle.BundleManifest,
+                    downloadTask,
+                    cancellationTokenSource.Token);
+
+                // selectedBundle.IsSelectedVersionInstalled = true;
+                downloadTask.Progress = 100d;
+                downloadTask.Status = DownloadTaskStatus.Completed;
+            }
+            catch (Exception ex)
+            {
+                downloadTask.Status = DownloadTaskStatus.Failed;
+                downloadTask.ProgressText = ex.GetFriendlyMessage();
+            }
+            finally
+            {
+                downloadTasks.Remove(selectedBundle.Metadata);
+                // await RefreshSources(cancellationToken);
             }
         }
-
-        if (valueWithDescriptions.Count == 0) return Task.CompletedTask;
-
-        var dialog = new SukiDialog
-        {
-            Title = "Edit Environment Variables",
-            Content = new GroupBox
-            {
-                Header = "Follow the instructions to edit the environment variables, or the bundle may not work properly.",
-                Content = new ListBox
-                {
-                    ItemsSource = valueWithDescriptions,
-                    ItemTemplate = new FuncDataTemplate<ValueWithDescriptionBase>(
-                        (v, _) => new ValueWithDescriptionInput
-                        {
-                            [!ValueWithDescriptionInput.ValueWithDescriptionProperty] = new Binding { Source = v }
-                        })
-                }
-            }
-        };
-        if (!DialogManager.TryShowDialog(dialog)) return Task.CompletedTask;
-
-        var taskCompletionSource = new TaskCompletionSource();
-        dialog.OnDismissed += _ => taskCompletionSource.TrySetResult();
-        return taskCompletionSource.Task;
-    }
-
-    [RelayCommand(CanExecute = nameof(IsBundleSelected))]
-    private async Task InstallBundleAsync(CancellationToken cancellationToken)
-    {
-        if (SelectedBundle is not { } selectedNode) return;
-        await EditBundleEnvironmentVariablesAsync();
-        await environmentManager.InstallBundleAsync(selectedNode.Metadata, selectedNode.BundleManifest, cancellationToken);
     }
 
     private async IAsyncEnumerable<BundleWrapper> LoadSourcesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await environmentManager.UpdateSourcesAsync(cancellationToken);
-        var sources = await environmentManager.EnumerateBundleManifestMetadataAsync();
-        foreach (var group in sources.GroupBy(m => $"{m.Namespace}:{m.Name}"))
+        var bundleManifests = await environmentManager.EnumerateBundleManifestMetadataAsync();
+        var installedBundles = (await environmentManager.EnumerateInstalledBundleMetadataAsync()).ToImmutableHashSet();
+        foreach (var group in bundleManifests.GroupBy(m => $"{m.Namespace}:{m.Name}"))
         {
             var items = group.ToList();
+            var latest = items.OrderDescending().First();
             yield return new BundleWrapper(
-                items[0].Name,
-                items[0],
-                await environmentManager.LoadBundleManifestAsync(items[0], cancellationToken),
-                items.Select(p => p.Version).ToList());
+                latest.Name,
+                latest,
+                await environmentManager.LoadBundleManifestAsync(latest, cancellationToken),
+                items.Select(p => new VersionWrapper(p.Version, installedBundles.Contains(p))).ToList());
         }
     }
 
@@ -123,11 +142,20 @@ public partial class MarketplacePageViewModel(IEnvironmentManager environmentMan
         return base.ViewUnloaded();
     }
 
-    public partial class BundleWrapper(
+    public class VersionWrapper(SemanticVersion version, bool isInstalled)
+    {
+        public SemanticVersion Version { get; set; } = version;
+
+        public bool IsInstalled { get; set; } = isInstalled;
+
+        public override string ToString() => Version.ToString();
+    }
+
+    public class BundleWrapper(
         string title,
         Metadata metadata,
         BundleManifest bundleManifest,
-        List<SemanticVersion> versions) : ObservableObject
+        List<VersionWrapper> versions) : ObservableObject
     {
         public string Title { get; } = title;
 
@@ -135,19 +163,33 @@ public partial class MarketplacePageViewModel(IEnvironmentManager environmentMan
 
         public BundleManifest BundleManifest { get; } = bundleManifest;
 
-        public List<SemanticVersion> Versions { get; } = versions;
+        public List<VersionWrapper> Versions { get; } = versions;
 
-        public SemanticVersion? SelectedVersion
+        public VersionWrapper? SelectedVersion
         {
             get;
             set
             {
                 if (field == value) return;
-                if (value.HasValue && !Versions.Contains(value.Value)) value = Versions.FirstOrDefault();
+                if (value != null && !Versions.Contains(value)) value = Versions.FirstOrDefault();
                 field = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(IsSelectedVersionInstalled));
             }
         } = versions.FirstOrDefault();
+
+        public bool IsSelectedVersionInstalled => SelectedVersion?.IsInstalled is true;
+
+        public string? ReadmeMarkdownUrlRoot
+        {
+            get
+            {
+                if (BundleManifest.Readme == null) return null;
+                var lastSlashIndex = BundleManifest.Readme.LastIndexOf('/');
+                if (lastSlashIndex == -1) return null;
+                return BundleManifest.Readme[..lastSlashIndex];
+            }
+        }
 
         public AsyncProperty<string?> ReadmeMarkdown { get; } = new(
             async () =>
@@ -158,5 +200,31 @@ public partial class MarketplacePageViewModel(IEnvironmentManager environmentMan
                 var response = await ServiceLocator.Resolve<HttpClient>().GetAsync(uri);
                 return await response.Content.ReadAsStringAsync();
             });
+
+        public IEnumerable<ValueWithDescriptionBase> EnvironmentVariables
+        {
+            get
+            {
+                foreach (var runtime in BundleManifest.Runtimes)
+                {
+                    switch (runtime)
+                    {
+                        case McpBundleRuntimeConfiguration
+                        {
+                            TransportConfiguration: StdioMcpTransportConfiguration { EnvironmentVariables: { } stdioEnvs }
+                        }:
+                        {
+                            foreach (var env in stdioEnvs) yield return env.Value;
+                            break;
+                        }
+                        case McpBundleRuntimeConfiguration { TransportConfiguration: SseMcpTransportConfiguration { Headers: { } sseHeaders } }:
+                        {
+                            foreach (var env in sseHeaders) yield return env.Value;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 }

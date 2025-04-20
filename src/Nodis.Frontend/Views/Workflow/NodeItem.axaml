@@ -46,8 +46,6 @@
                     </Border.Background>
 
                     <Grid RowDefinitions="32,5,Auto,Auto,Auto">
-                        <suki:SukiBackground Grid.RowSpan="5"/>
-
                         <DockPanel Grid.Row="0" LastChildFill="True">
                             <Border
                                 x:Name="PART_StatusIndicator" DockPanel.Dock="Left"
@@ -61,7 +59,7 @@
                                             <Run Text="Node is"/>
                                             <Run Text="{Binding Node.State, RelativeSource={RelativeSource TemplatedParent}}"/>
                                         </TextBlock>
-                                        <TextBlock IsVisible="{Binding Node.ErrorMessage, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding Node.ErrorMessage, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <TextBlock IsVisible="{Binding !!Node.ErrorMessage, RelativeSource={RelativeSource TemplatedParent}}" Text="{Binding Node.ErrorMessage, RelativeSource={RelativeSource TemplatedParent}}"/>
                                     </StackPanel>
                                 </ToolTip.Tip>
                             </Border>
@@ -127,18 +125,15 @@
                                 <Panel x:Name="PART_ControlInputPinPanel" Height="20">
                                     <Panel.IsVisible>
                                         <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                            <Binding
-                                                Converter="{x:Static ObjectConverters.IsNotNull}"
-                                                Path="ControlInput"
-                                                RelativeSource="{RelativeSource TemplatedParent}"/>
+                                            <Binding Path="!!ControlInput" RelativeSource="{RelativeSource TemplatedParent}"/>
                                             <Binding
                                                 FallbackValue="False" Path="ControlInput.Pin.IsVisible"
                                                 RelativeSource="{RelativeSource TemplatedParent}"/>
                                         </MultiBinding>
                                     </Panel.IsVisible>
                                     <Path
-                                        Margin="11,0,0,0" HorizontalAlignment="Left"
-                                        Classes="NodePin">
+                                        Classes="NodePin" Margin="11,0,0,0"
+                                        HorizontalAlignment="Left">
                                         <Path.Stroke>
                                             <SolidColorBrush Color="{Binding ControlInput.StrokeColor, FallbackValue={x:Null}, RelativeSource={RelativeSource TemplatedParent}}"/>
                                         </Path.Stroke>
@@ -162,8 +157,8 @@
                                                     Height="20" HorizontalAlignment="Left"
                                                     VerticalAlignment="Top">
                                                     <Border
-                                                        Margin="10,0,0,0" HorizontalAlignment="Left"
-                                                        Classes="NodePin">
+                                                        Classes="NodePin" Margin="10,0,0,0"
+                                                        HorizontalAlignment="Left">
                                                         <Border.BorderBrush>
                                                             <SolidColorBrush Color="{Binding StrokeColor}"/>
                                                         </Border.BorderBrush>
@@ -206,8 +201,8 @@
                                                     VerticalAlignment="Center" IsHitTestVisible="False"
                                                     Text="{Binding TypedPin.Name}"/>
                                                 <Path
-                                                    Margin="0,0,10,0" HorizontalAlignment="Right"
-                                                    Classes="NodePin" IsHitTestVisible="False">
+                                                    Classes="NodePin" Margin="0,0,10,0"
+                                                    HorizontalAlignment="Right" IsHitTestVisible="False">
                                                     <Path.Stroke>
                                                         <SolidColorBrush Color="{Binding StrokeColor}"/>
                                                     </Path.Stroke>
@@ -235,8 +230,8 @@
                                                     VerticalAlignment="Center" IsHitTestVisible="False"
                                                     Text="{Binding TypedPin.Name}"/>
                                                 <Border
-                                                    Margin="0,0,10,0" HorizontalAlignment="Right"
-                                                    Classes="NodePin" IsHitTestVisible="False">
+                                                    Classes="NodePin" Margin="0,0,10,0"
+                                                    HorizontalAlignment="Right" IsHitTestVisible="False">
                                                     <Border.BorderBrush>
                                                         <SolidColorBrush Color="{Binding StrokeColor}"/>
                                                     </Border.BorderBrush>

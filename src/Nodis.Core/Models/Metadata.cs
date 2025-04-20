@@ -1,9 +1,17 @@
-﻿namespace Nodis.Core.Models;
+﻿using MessagePack;
+using VYaml.Annotations;
+
+namespace Nodis.Core.Models;
 
 /// <param name="Namespace">e.g. NodisAI.Main</param>
 /// <param name="Name">e.g. ollama</param>
 /// <param name="Version">e.g. 0.5.12</param>
-public record struct Metadata(string Namespace, string Name, SemanticVersion Version) : IComparable<Metadata>
+[YamlObject]
+[MessagePackObject]
+public partial record struct Metadata(
+    [property: YamlMember("namespace"), Key(0)] string Namespace,
+    [property: YamlMember("name"), Key(1)] string Name,
+    [property: YamlMember("version"), Key(2)] SemanticVersion Version) : IComparable<Metadata>
 {
     public int CompareTo(Metadata other)
     {

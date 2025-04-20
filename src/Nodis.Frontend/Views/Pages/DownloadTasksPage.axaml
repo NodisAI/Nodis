@@ -1,0 +1,96 @@
+﻿<v:ReactiveUserControl
+    x:Class="Nodis.Frontend.Views.DownloadTasksPage" xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ip="https://github.com/MahApps/IconPacks.Avalonia" xmlns:m="clr-namespace:Nodis.Core.Models;assembly=Nodis.Core"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:sys="clr-namespace:System;assembly=System.Runtime" xmlns:v="clr-namespace:Nodis.Frontend.Views"
+    xmlns:vc="clr-namespace:Nodis.Frontend.ValueConverters" xmlns:vm="clr-namespace:Nodis.Frontend.ViewModels"
+    d:DesignHeight="1300" d:DesignWidth="720"
+    x:DataType="vm:DownloadTasksPageViewModel" x:TypeArguments="vm:DownloadTasksPageViewModel"
+    mc:Ignorable="d">
+    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,1,*">
+        <TextBlock
+            Classes="h4" Grid.Row="0"
+            Grid.Column="0" Margin="8"
+            Text="{Binding $parent[v:DownloadTasksPage].Title}"/>
+
+        <Border
+            Grid.Row="1" Grid.Column="0"
+            Grid.ColumnSpan="2"
+            Background="{DynamicResource SukiBorderBrush}"/>
+
+        <ItemsControl
+            Grid.Row="2" Grid.Column="0"
+            Grid.ColumnSpan="2" Margin="8"
+            ItemsSource="{Binding DownloadTasks}">
+            <ItemsControl.Resources>
+                <vc:DownloadTaskStatusToTextDecorationCollectionConverter x:Key="DownloadTaskStatusToTextDecorationCollectionConverter"/>
+            </ItemsControl.Resources>
+
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="m:DownloadTask">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <ContentPresenter
+                            Grid.Column="0"
+                            Width="{Binding $self.Bounds.Height}"
+                            Margin="0,0,8,0"
+                            Content="{Binding Icon}"
+                            IsVisible="{Binding !!Icon}"/>
+
+                        <StackPanel
+                            Grid.Column="1" Orientation="Vertical"
+                            Spacing="4">
+                            <TextBlock
+                                Classes="h5" MaxLines="2"
+                                Text="{Binding Title}"
+                                TextDecorations="{Binding Status, Converter={StaticResource DownloadTaskStatusToTextDecorationCollectionConverter}}"
+                                TextTrimming="{x:Static TextTrimming.CharacterEllipsis}"
+                                TextWrapping="Wrap"/>
+
+                            <TextBlock FontSize="14" Text="{Binding ProgressText}"/>
+
+                            <ProgressBar
+                                IsIndeterminate="{Binding Progress, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static sys:Double.NaN}}"
+                                IsVisible="{Binding Status, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static m:DownloadTaskStatus.InProgress}}"
+                                Value="{Binding Progress}">
+                                <ProgressBar.Transitions>
+                                    <Transitions>
+                                        <DoubleTransition
+                                            Easing="CubicEaseInOut" Property="Value"
+                                            Duration="0:0:0.6"/>
+                                    </Transitions>
+                                </ProgressBar.Transitions>
+                            </ProgressBar>
+                        </StackPanel>
+
+                        <StackPanel
+                            Classes="TaskOperationsPanel" Grid.Column="1"
+                            HorizontalAlignment="Right" VerticalAlignment="Center"
+                            IsVisible="False" Orientation="Horizontal"
+                            Spacing="4">
+                            <Button
+                                Classes="Basic"
+                                Command="{Binding RetryCommand}"
+                                IsVisible="{Binding CanRetry}">
+                                <ip:PackIconEvaIcons
+                                    Width="16" Height="16"
+                                    Kind="Repeat"/>
+                            </Button>
+                            <Button Classes="Basic" Command="{Binding DeleteCommand}">
+                                <ip:PackIconEvaIcons
+                                    Width="16" Height="16"
+                                    Kind="Close"/>
+                            </Button>
+                        </StackPanel>
+
+                        <Grid.Styles>
+                            <Style Selector=":pointerover StackPanel.TaskOperationsPanel">
+                                <Setter Property="IsVisible" Value="True"/>
+                            </Style>
+                        </Grid.Styles>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
+</v:ReactiveUserControl>

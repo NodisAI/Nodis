@@ -9,4 +9,4 @@ namespace Nodis.Core.Models;
 [YamlObject]
 public partial record InstalledBundle(
     [property: YamlMember("manifest")] BundleManifest Manifest,
-    [property: YamlMember("nodes")] IReadOnlyList<UserNode> Nodes);
+    [property: YamlMember("nodes")] IReadOnlyList<BundleNode> Nodes);

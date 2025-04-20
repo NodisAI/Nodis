@@ -7,6 +7,8 @@
         <entry key="../3rd/SukiUI/SukiUI/ColorTheme/Light.axaml" value="Nodis/Nodis.csproj" />
         <entry key="../3rd/SukiUI/SukiUI/Controls/GlassMorphism/GlassCard.axaml" value="Nodis/Nodis.csproj" />
         <entry key="../3rd/SukiUI/SukiUI/Controls/GroupBox.axaml" value="Nodis/Nodis.csproj" />
+        <entry key="../3rd/SukiUI/SukiUI/Controls/InfoBadge.axaml" value="Nodis/Nodis.csproj" />
+        <entry key="../3rd/SukiUI/SukiUI/Controls/SukiDialog.axaml" value="Nodis/Nodis.csproj" />
         <entry key="../3rd/SukiUI/SukiUI/Controls/SukiSideMenu.axaml" value="Nodis/Nodis.csproj" />
         <entry key="../3rd/SukiUI/SukiUI/Controls/SukiSideMenuItem.axaml" value="Nodis/Nodis.csproj" />
         <entry key="../3rd/SukiUI/SukiUI/Controls/SukiStackPage.axaml" value="Nodis/Nodis.csproj" />
@@ -24,6 +26,13 @@
         <entry key="../3rd/SukiUI/SukiUI/Theme/TextBoxStyles.xaml" value="Nodis/Nodis.csproj" />
         <entry key="../3rd/SukiUI/SukiUI/Theme/TextStyles.axaml" value="Nodis/Nodis.csproj" />
         <entry key="../3rd/SukiUI/SukiUI/Theme/TreeViewStyles.xaml" value="Nodis/Nodis.csproj" />
+        <entry key="Nodis.Frontend/App.axaml" value="Nodis/Nodis.csproj" />
+        <entry key="Nodis.Frontend/Views/Controls/ValueWithDescriptionInput.axaml" value="Nodis/Nodis.csproj" />
+        <entry key="Nodis.Frontend/Views/Pages/DownloadTasksPage.axaml" value="Nodis/Nodis.csproj" />
+        <entry key="Nodis.Frontend/Views/Pages/MarketplacePage.axaml" value="Nodis/Nodis.csproj" />
+        <entry key="Nodis.Frontend/Views/Pages/WorkflowEditPage.axaml" value="Nodis/Nodis.csproj" />
+        <entry key="Nodis.Frontend/Views/Windows/MainWindow.axaml" value="Nodis/Nodis.csproj" />
+        <entry key="Nodis.Frontend/Views/Workflow/NodeItem.axaml" value="Nodis/Nodis.csproj" />
         <entry key="Nodis/App.axaml" value="Nodis/Nodis.csproj" />
         <entry key="Nodis/Styles/Markdown.axaml" value="Nodis/Nodis.csproj" />
         <entry key="Nodis/Views/MainWindow.axaml" value="Nodis/Nodis.csproj" />

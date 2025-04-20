@@ -1,12 +1,15 @@
-﻿using Nodis.Core.Extensions;
+﻿using MessagePack;
+using Nodis.Core.Extensions;
 using VYaml.Annotations;
 
 namespace Nodis.Core.Models.Workflow;
 
 [YamlObject]
+[MessagePackObject(AllowPrivate = true)]
 public partial class HttpRequestNode : BuiltInNode
 {
     [YamlIgnore]
+    [IgnoreMember]
     public override string Name => "URL Request";
 
     public HttpRequestNode()

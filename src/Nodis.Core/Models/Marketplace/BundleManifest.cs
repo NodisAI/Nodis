@@ -15,7 +15,11 @@ public partial record BundleManifest
     /// A user-friendly name of the bundle. This is also used for LLM and search.
     /// </summary>
     [YamlMember("description")]
-    public required string Description { get; init; }
+    public required string Description
+    {
+        get;
+        init => field = value.Trim();
+    }
 
     /// <summary>
     /// Url to the icon of the bundle.

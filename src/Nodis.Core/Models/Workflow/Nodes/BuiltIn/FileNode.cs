@@ -1,13 +1,16 @@
 ﻿using System.Runtime.Serialization;
+using MessagePack;
 using Nodis.Core.Extensions;
 using VYaml.Annotations;
 
 namespace Nodis.Core.Models.Workflow;
 
 [YamlObject]
+[MessagePackObject(AllowPrivate = true)]
 public partial class FileNode : BuiltInNode
 {
     [YamlIgnore]
+    [IgnoreMember]
     public override string Name => "File";
 
     public FileNode()

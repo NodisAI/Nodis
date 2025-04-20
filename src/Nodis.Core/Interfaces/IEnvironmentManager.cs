@@ -51,9 +51,14 @@ public interface IEnvironmentManager
     /// </remarks>
     /// <param name="metadata"></param>
     /// <param name="bundleManifest"></param>
+    /// <param name="progress"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<InstalledBundle> InstallBundleAsync(Metadata metadata, BundleManifest bundleManifest, CancellationToken cancellationToken);
+    Task<InstalledBundle> InstallBundleAsync(
+        Metadata metadata,
+        BundleManifest bundleManifest,
+        IAdvancedProgress? progress,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Ensures that the specified runtimes are installed and running until <see cref="IAsyncDisposable"/> is disposed.

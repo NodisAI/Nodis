@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Xml.Serialization;
+using MessagePack;
 using Nodis.Core.Extensions;
 using VYaml.Annotations;
 using VYaml.Serialization;
@@ -9,9 +10,11 @@ using VYaml.Serialization;
 namespace Nodis.Core.Models.Workflow;
 
 [YamlObject]
+[MessagePackObject(AllowPrivate = true)]
 public partial class SerializerNode : BuiltInNode
 {
     [YamlIgnore]
+    [IgnoreMember]
     public override string Name => "Serializer";
 
     public SerializerNode()

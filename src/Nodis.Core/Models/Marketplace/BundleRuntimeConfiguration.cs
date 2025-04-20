@@ -58,7 +58,7 @@ public abstract partial record McpTransportConfiguration;
 [YamlObject]
 public partial record StdioMcpTransportConfiguration(
     [property: YamlMember("command")] string Command,
-    [property: YamlMember("args")] IReadOnlyList<string> Auguments,
+    [property: YamlMember("args")] IReadOnlyList<string> Arguments,
     [property: YamlMember("workdir")] string? WorkingDirectory = null,
     [property: YamlMember("env")] IReadOnlyDictionary<string, ValueWithDescription<string>>? EnvironmentVariables = null) : McpTransportConfiguration;
 

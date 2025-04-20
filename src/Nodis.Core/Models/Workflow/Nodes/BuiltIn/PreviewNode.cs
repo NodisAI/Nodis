@@ -4,6 +4,7 @@ using VYaml.Annotations;
 namespace Nodis.Core.Models.Workflow;
 
 [YamlObject]
+[MessagePackObject(AllowPrivate = true)]
 public partial class PreviewNode : BuiltInNode
 {
     [YamlIgnore]

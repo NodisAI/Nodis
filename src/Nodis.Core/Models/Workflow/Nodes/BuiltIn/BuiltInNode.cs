@@ -1,4 +1,5 @@
-﻿using VYaml.Annotations;
+﻿using MessagePack;
+using VYaml.Annotations;
 
 namespace Nodis.Core.Models.Workflow;
 
@@ -12,4 +13,14 @@ namespace Nodis.Core.Models.Workflow;
 [YamlObjectUnion("!serializer", typeof(SerializerNode))]
 [YamlObjectUnion("!trigger", typeof(TriggerNode))]
 [YamlObjectUnion("!variable", typeof(VariableNode))]
+[MessagePackObject(AllowPrivate = true)]
+[Union(0, typeof(ConditionNode))]
+[Union(1, typeof(DelayNode))]
+[Union(2, typeof(FileNode))]
+[Union(3, typeof(HttpRequestNode))]
+[Union(4, typeof(LoopNode))]
+[Union(5, typeof(PreviewNode))]
+[Union(6, typeof(SerializerNode))]
+[Union(7, typeof(TriggerNode))]
+[Union(8, typeof(VariableNode))]
 public abstract partial class BuiltInNode : Node;
